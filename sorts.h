@@ -225,7 +225,50 @@ void testGrahamScan() {
     }
     std::cout << "\nConvex hull\n";
     displayPoint2DVector(hull_points, min_x, max_x, min_y, max_y);
+}
 
+template <typename RandomIt, typename Container>
+void merge_sort_merge(Container aux, RandomIt lo, RandomIt mid, RandomIt hi) {
+    auto i = lo, j = mid;
+    auto aux_lo = aux.begin(), aux_hi = aux.end();
+
+    // Copy to auxiliary range.
+    for (auto k = lo, aux_it = aux_lo; k != hi && aux_it != aux_hi; k++, aux_it++) {
+        *aux_it = *k;
+    }
+
+    // Get element from auxiliary range, using the index calculated from the iterator into the original range.
+    auto getAuxElement = [&aux_lo, &lo](RandomIt it) {
+        return *(aux_lo + std::distance(lo, it));
+    };
+
+    for (auto k = lo; k != hi; k++) {
+        auto i_mid_dist = std::distance(i, mid);
+        auto j_hi_dist = std::distance(j, hi);
+        // No more elements in left sub-range copy right elements.
+        if      (i_mid_dist == 0) { *k = getAuxElement(j); j++; }
+        // No more elements in right sub-range copy left elements.
+        else if (j_hi_dist == 0)  { *k = getAuxElement(i); i++; }
+        // Compare two elements from the auxiliary array, using index computed from original iterator.
+        else if (getAuxElement(i) < getAuxElement(j)) { *k = getAuxElement(i); i++; }
+        else                      { *k = getAuxElement(j); j++; }
+    }
+}
+
+template <typename RandomIt, typename Container>
+void merge_sort_recursive(Container aux, RandomIt lo, RandomIt hi) {
+    long n = std::distance(lo, hi);
+    if (n < 2) return;
+    auto mid = lo + (n / 2);
+    merge_sort_recursive(aux, lo, mid);
+    merge_sort_recursive(aux, mid, hi);
+    merge_sort_merge(aux, lo, mid, hi);
+}
+
+template <typename RandomIt>
+void merge_sort(RandomIt first, RandomIt last) {
+    std::vector<typename RandomIt::value_type> aux(first, last);
+    merge_sort_recursive(aux, first, last);
 }
 
 void testSorts() {
@@ -233,6 +276,7 @@ void testSorts() {
     auto elements2 = elements;
     auto elements3 = elements;
     auto elements4 = elements;
+    auto elements5 = elements;
     std::cout << "Test selection sort.\n";
     selection_sort(elements.begin(), elements.end());
     print_range(elements.begin(), elements.end());
@@ -252,6 +296,10 @@ void testSorts() {
     std::cout << "Test knuth shuffle.\n";
     knuth_shuffle(elements4.begin(), elements4.end());
     print_range(elements4.begin(), elements4.end());
+
+    std::cout << "Test merge sort.\n";
+    merge_sort(elements5.begin(), elements5.end());
+    print_range(elements5.begin(), elements5.end());
 }
 
 
