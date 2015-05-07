@@ -271,12 +271,25 @@ void merge_sort(RandomIt first, RandomIt last) {
     merge_sort_recursive(aux, first, last);
 }
 
+template <typename RandomIt>
+void bottom_up_merge_sort(RandomIt first, RandomIt last) {
+    std::vector<typename RandomIt::value_type> aux(first, last);
+    long n = std::distance(first, last);
+    for (size_t sz = 1; sz < n; sz = sz + sz) {
+        for (size_t lo = 0; lo < n - sz; lo += sz + sz) {
+            merge_sort_merge(aux, first + lo, first + lo + sz, std::min(first + lo + sz + sz, last));
+            print_range(first + lo, std::min(first + lo + sz + sz, last));
+        }
+    }
+}
+
 void testSorts() {
     std::vector<int> elements = { 4, 2, 9, 6, 7, 3, 8, 1, 5};
     auto elements2 = elements;
     auto elements3 = elements;
     auto elements4 = elements;
     auto elements5 = elements;
+    auto elements6 = elements;
     std::cout << "Test selection sort.\n";
     selection_sort(elements.begin(), elements.end());
     print_range(elements.begin(), elements.end());
@@ -300,6 +313,10 @@ void testSorts() {
     std::cout << "Test merge sort.\n";
     merge_sort(elements5.begin(), elements5.end());
     print_range(elements5.begin(), elements5.end());
+
+    std::cout << "Test bottom up merge sort.\n";
+    bottom_up_merge_sort(elements6.begin(), elements6.end());
+    print_range(elements6.begin(), elements6.end());
 }
 
 
