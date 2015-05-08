@@ -121,7 +121,8 @@ public:
 
         void swap(typename IQueue<T>::IteratorImpl& other) noexcept {
             LinkedListForwardIterator& concrete_other = dynamic_cast<LinkedListForwardIterator&>(other);
-            std::swap(concrete_other.node, node);
+            using std::swap;
+            swap(concrete_other.node, node);
         }
 
         void increment () {
@@ -228,10 +229,11 @@ public:
 
         void swap(typename IQueue<T>::IteratorImpl& other) noexcept {
             ArrayForwardIterator& concrete_other = dynamic_cast<ArrayForwardIterator&>(other);
-            std::swap(concrete_other.start, start);
-            std::swap(concrete_other.count, count);
-            std::swap(concrete_other.capacity, capacity);
-            std::swap(concrete_other.current_element, current_element);
+            using std::swap;
+            swap(concrete_other.start, start);
+            swap(concrete_other.count, count);
+            swap(concrete_other.capacity, capacity);
+            swap(concrete_other.current_element, current_element);
         }
 
         void increment () {

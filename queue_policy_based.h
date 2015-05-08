@@ -125,10 +125,11 @@ public:
         ArrayForwardIterator() : start(0), count(0), capacity(0), current_element(0), elements(nullptr) {}
 
         void swap(ArrayForwardIterator& other) noexcept {
-            std::swap(other.start, start);
-            std::swap(other.count, count);
-            std::swap(other.capacity, capacity);
-            std::swap(other.current_element, current_element);
+            using std::swap;
+            swap(other.start, start);
+            swap(other.count, count);
+            swap(other.capacity, capacity);
+            swap(other.current_element, current_element);
         }
 
         void increment () {
@@ -228,7 +229,8 @@ public:
         LinkedListForwardIterator() : node(nullptr) {}
 
         void swap(LinkedListForwardIterator& other) noexcept {
-            std::swap(other.node, node);
+            using std::swap;
+            swap(other.node, node);
         }
 
         void increment () {
