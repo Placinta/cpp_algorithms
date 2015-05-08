@@ -256,13 +256,35 @@ void merge_sort_merge(Container aux, RandomIt lo, RandomIt mid, RandomIt hi) {
 }
 
 template <typename RandomIt, typename Container>
+void merge_sort_merge_smarter(Container aux, RandomIt lo, RandomIt mid, RandomIt hi) {
+    auto i = lo, j = mid;
+    auto aux_lo = aux.begin();
+    auto aux_it = aux_lo;
+
+    for (auto k = lo; k != hi; k++, aux_it++) {
+        auto i_mid_dist = std::distance(i, mid);
+        auto j_hi_dist = std::distance(j, hi);
+        // No more elements in left sub-range copy right elements.
+        if      (i_mid_dist == 0) { *aux_it = *j; j++; }
+        // No more elements in right sub-range copy left elements.
+        else if (j_hi_dist == 0)  { *aux_it = *i; i++; }
+        // Compare two elements from the auxiliary array, using index computed from original iterator.
+        else if (*i < *j)         { *aux_it = *i; i++; }
+        else                      { *aux_it = *j; j++; }
+    }
+
+    // Copy sorted elements from auxiliary array back to original range.
+    std::copy(aux_lo, aux_it, lo);
+}
+
+template <typename RandomIt, typename Container>
 void merge_sort_recursive(Container aux, RandomIt lo, RandomIt hi) {
     long n = std::distance(lo, hi);
     if (n < 2) return;
     auto mid = lo + (n / 2);
     merge_sort_recursive(aux, lo, mid);
     merge_sort_recursive(aux, mid, hi);
-    merge_sort_merge(aux, lo, mid, hi);
+    merge_sort_merge_smarter(aux, lo, mid, hi);
 }
 
 template <typename RandomIt>
@@ -277,8 +299,8 @@ void bottom_up_merge_sort(RandomIt first, RandomIt last) {
     long n = std::distance(first, last);
     for (size_t sz = 1; sz < n; sz = sz + sz) {
         for (size_t lo = 0; lo < n - sz; lo += sz + sz) {
-            merge_sort_merge(aux, first + lo, first + lo + sz, std::min(first + lo + sz + sz, last));
-            print_range(first + lo, std::min(first + lo + sz + sz, last));
+            merge_sort_merge_smarter(aux, first + lo, first + lo + sz, std::min(first + lo + sz + sz, last));
+//            print_range(first + lo, std::min(first + lo + sz + sz, last));
         }
     }
 }
