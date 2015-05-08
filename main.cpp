@@ -3,6 +3,7 @@
 #include "queue.h"
 #include "queue_policy_based.h"
 #include "sorts.h"
+#include "5algs.h"
 
 int main() {
     testUF();
@@ -11,5 +12,6 @@ int main() {
     testPolicyBasedQueues();
     testSorts();
     testGrahamScan();
+    test5Algs();
     return 0;
 }
