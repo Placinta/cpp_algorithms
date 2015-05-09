@@ -324,19 +324,19 @@ RandomIt partition(RandomIt first, RandomIt last) {
 }
 
 template <typename RandomIt>
-RandomIt medianOf3(RandomIt first, RandomIt last) {
-    auto mid = std::next(first, std::distance(first, last) / 2);
+RandomIt medianOf3(RandomIt first, RandomIt last_inclusive) {
+    auto mid = std::next(first, std::distance(first, last_inclusive) / 2);
 
     if (*first < *mid) {
         // first, mid
-        if (*mid < *last) {
+        if (*mid < *last_inclusive) {
             // first, mid, last
             return mid;
         }
         else {
-            if(*first < *last) {
+            if(*first < *last_inclusive) {
                 // first, last, mid
-                return last;
+                return last_inclusive;
             }
             else {
                 // last, first, mid
@@ -346,17 +346,17 @@ RandomIt medianOf3(RandomIt first, RandomIt last) {
     }
     else {
         // mid, first
-        if (*last < *mid) {
+        if (*last_inclusive < *mid) {
             // last, mid, first
             return mid;
         }
         else {
-            if (*last > *first) {
+            if (*last_inclusive > *first) {
                 // mid, first, last
                 return first;
             } else {
                 // mid, last, first
-                return last;
+                return last_inclusive;
             }
         }
     }
@@ -417,6 +417,44 @@ RandomIt quick_select(RandomIt first, RandomIt last, long n) {
     }
 }
 
+template <typename RandomIt, typename Comparator>
+void quick_sort_3_way_recursive(RandomIt first, RandomIt last, Comparator comp) {
+    long n = std::distance(first, last);
+    if (n < 3) {
+        insertion_sort(first, last);
+        return;
+    }
+
+    auto median = medianOf3(first, last - 1);
+    std::swap(*first, *median);
+
+    auto lt = first, gt = last - 1, i = first + 1;
+    while (i <= gt) {
+        if       (comp(*i, *lt) < 0)     { std::swap(*(i++), *(lt++)); }
+        else if  (comp(*i, *lt) > 0)     { std::swap(*i, *(gt--)); }
+        else  /* (comp(*i, *lt) == 0) */ { i++; }
+    }
+
+    quick_sort_3_way_recursive(first, lt, comp);
+    quick_sort_3_way_recursive(gt + 1, last, comp);
+}
+
+template <typename RandomIt, typename Comparator>
+void quick_sort_3_way(RandomIt first, RandomIt last, Comparator comp) {
+    knuth_shuffle(first, last);
+    quick_sort_3_way_recursive(first, last, comp);
+}
+
+template <typename RandomIt>
+void quick_sort_3_way(RandomIt first, RandomIt last) {
+    knuth_shuffle(first, last);
+    quick_sort_3_way_recursive(first, last, [](const typename RandomIt::value_type& a, const typename RandomIt::value_type& b) {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    });
+}
+
 void testSorts() {
     std::vector<int> elements = { 4, 2, 9, 6, 7, 3, 8, 1, 5};
     auto elements2 = elements;
@@ -425,8 +463,10 @@ void testSorts() {
     auto elements5 = elements;
     auto elements6 = elements;
     auto elements7 = elements;
-    elements7 = { 4, 2, 2, 2, 2, 3, 8, 2, 2};
+    elements7 = {4, 2, 2, 2, 2, 3, 8, 2, 2};
     auto elements8 = elements;
+    auto elements9 = elements;
+    elements9 = {4, 2, 2, 2, 2, 3, 8, 2, 2};
     std::cout << "Test selection sort.\n";
     selection_sort(elements.begin(), elements.end());
     print_range(elements.begin(), elements.end());
@@ -467,6 +507,16 @@ void testSorts() {
     else {
         std::cout << "Element index out of bounds.\n";
     }
+
+    std::cout << "Test 3-way quick sort.\n";
+    quick_sort_3_way(elements9.begin(), elements9.end());
+    print_range(elements9.begin(), elements9.end());
+    quick_sort_3_way(elements9.begin(), elements9.end(), [](const int& a, const int& b) {
+        if (a > b) return -1;
+        if (a < b) return 1;
+        return 0;
+    });
+    print_range(elements9.begin(), elements9.end());
 }
 
 
