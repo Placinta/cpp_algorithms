@@ -39,6 +39,7 @@ void selection_sort_vector(std::vector<T>& elements) {
         }
         std::swap(elements[i], elements[min]);
     }
+    assert(std::is_sorted(elements.begin(), elements.end()));
 }
 
 
@@ -54,6 +55,7 @@ void selection_sort(RandomIt first, RandomIt last) {
         }
         std::swap(*i, *min);
     }
+    assert(std::is_sorted(first, last));
 }
 
 template <typename RandomIt>
@@ -67,6 +69,7 @@ void insertion_sort(RandomIt first, RandomIt last) {
             else break;
         }
     }
+    assert(std::is_sorted(first, last));
 }
 
 template <typename RandomIt>
@@ -90,6 +93,7 @@ void shell_sort(RandomIt first, RandomIt last) {
         }
         h = h / 3;
     }
+    assert(std::is_sorted(first, last));
 }
 
 struct Point2D {
@@ -285,6 +289,7 @@ template <typename RandomIt>
 void merge_sort(RandomIt first, RandomIt last) {
     std::vector<typename RandomIt::value_type> aux(first, last);
     merge_sort_recursive(aux, first, last);
+    assert(std::is_sorted(first, last));
 }
 
 template <typename RandomIt>
@@ -296,6 +301,7 @@ void bottom_up_merge_sort(RandomIt first, RandomIt last) {
             merge_sort_merge_smarter(aux, first + lo, first + lo + sz, std::min(first + lo + sz + sz, last));
         }
     }
+    assert(std::is_sorted(first, last));
 }
 
 
@@ -376,6 +382,7 @@ template <typename RandomIt>
 void quick_sort(RandomIt first, RandomIt last) {
     knuth_shuffle(first, last);
     quick_sort_recursive(first, last);
+    assert(std::is_sorted(first, last));
 }
 
 template <typename RandomIt>

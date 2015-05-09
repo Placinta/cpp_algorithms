@@ -107,8 +107,55 @@ private:
     Compare comp;
 };
 
+template <typename T, typename Compare = std::less<T> >
+void sink(std::vector<T>& elements, long i, long n, Compare comp) {
+    while((i+1) * 2 - 1 < n) {
+        auto index = (i+1) * 2 - 1;
+        if (index + 1 < n && comp(elements[index + 1], elements[index])) {
+            index++;
+        }
+        if (comp(elements[index], elements[i])) {
+            std::swap(elements[i], elements[index]);
+            i = index;
+        }
+        else break;
+    }
+}
+
+template <typename T, typename Compare = std::less<T> >
+void heap_sort(std::vector<T>& elements, Compare comp) {
+    auto n = elements.size();
+    auto i = n / 2;
+
+    // Make a heap.
+    while (i >= 1) {
+        sink(elements, i - 1, n, comp);
+        i--;
+    }
+    print_range(elements.begin(), elements.end());
+
+    // Extract min, put it at end, and sink new min.
+    i = n;
+    while (i > 1) {
+        std::swap(elements[0], elements[i - 1]);
+        i--;
+        sink(elements, 0, i, comp);
+    }
+
+    assert(std::is_sorted(elements.begin(), elements.end(), std::not2(comp)));
+}
+
+template <typename T>
+void heap_sort(std::vector<T>& elements) {
+    heap_sort(elements, std::less<T>());
+}
+
+
 void testPriorityQueue() {
+    std::cout << "Test priority queue based on binary heap.\n";
     std::vector<int> elements = { 4, 2, 9, 6, 7, 3, 8, 1, 5};
+
+    auto elements2 = elements;
     PriorityQueue<int, std::greater<int> > pq(elements.begin(), elements.end());
     while (!pq.empty()) {
         std::cout << pq.removeMax() << " ";
@@ -122,6 +169,10 @@ void testPriorityQueue() {
     }
     std::cout << std::endl;
 
+    std::cout << "Test in-place heap construction and heap sort.\n";
+    heap_sort(elements2, std::greater<int>());
+    print_range(elements2.begin(), elements2.end());
+    std::cout << std::endl;
 }
 
 #endif //ALGS_PRIORITY_QUEUE_H
