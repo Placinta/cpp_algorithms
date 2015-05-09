@@ -132,7 +132,6 @@ void heap_sort(std::vector<T>& elements, Compare comp) {
         sink(elements, i - 1, n, comp);
         i--;
     }
-    print_range(elements.begin(), elements.end());
 
     // Extract min, put it at end, and sink new min.
     i = n;
@@ -151,11 +150,54 @@ void heap_sort(std::vector<T>& elements) {
 }
 
 
+template <typename RandomIt, typename Compare>
+void sink(RandomIt i, RandomIt first, RandomIt last, long n, Compare comp) {
+    while((std::distance(first, i) * 2 + 1) < n) {
+        auto index = std::next(i, std::distance(first, i) + 1);
+        if (index + 1 != last && comp(*(index+1), *index)) {
+            index++;
+        }
+        if (comp(*index, *i)) {
+            std::swap(*index, *i);
+            i = index;
+        }
+        else break;
+    }
+}
+
+template <typename RandomIt, typename Compare>
+void heap_sort(RandomIt first, RandomIt last, Compare comp) {
+    auto n = std::distance(first, last);
+    auto i = std::next(first, n / 2 - 1);
+
+    // Make a heap.
+    while (true) {
+        sink(i, first, last, n, comp);
+        if (i == first) break;
+        i--;
+    }
+
+    // Extract min, put it at end, and sink new min.
+    i = std::prev(last);
+    while (i != first) {
+        std::swap(*first, *i);
+        i--;
+        sink(first, first, i + 1, std::distance(first, i) + 1, comp);
+    }
+
+    assert(std::is_sorted(first, last, std::not2(comp)));
+}
+
+template <typename RandomIt>
+void heap_sort(RandomIt first, RandomIt last) {
+    heap_sort(first, last, std::less<typename RandomIt::value_type>());
+}
+
 void testPriorityQueue() {
     std::cout << "Test priority queue based on binary heap.\n";
     std::vector<int> elements = { 4, 2, 9, 6, 7, 3, 8, 1, 5};
-
     auto elements2 = elements;
+    auto elements3 = elements;
     PriorityQueue<int, std::greater<int> > pq(elements.begin(), elements.end());
     while (!pq.empty()) {
         std::cout << pq.removeMax() << " ";
@@ -170,8 +212,15 @@ void testPriorityQueue() {
     std::cout << std::endl;
 
     std::cout << "Test in-place heap construction and heap sort.\n";
+    heap_sort(elements2);
     heap_sort(elements2, std::greater<int>());
     print_range(elements2.begin(), elements2.end());
+    std::cout << std::endl;
+
+    std::cout << "Test in-place heap construction and heap sort of a range of elements specified by two iterators.\n";
+    heap_sort(elements3.begin(), elements3.end());
+    heap_sort(elements3.begin(), elements3.end(), std::greater<int>());
+    print_range(elements3.begin(), elements3.end());
     std::cout << std::endl;
 }
 
