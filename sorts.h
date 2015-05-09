@@ -11,6 +11,7 @@
 #include <random>
 #include <stack>
 #include <fstream>
+#include "utils.h"
 
 template <typename RandomIt>
 void knuth_shuffle(RandomIt first, RandomIt last) {
@@ -40,13 +41,6 @@ void selection_sort_vector(std::vector<T>& elements) {
     }
 }
 
-template <typename It>
-void print_range(It first, It last) {
-    for (It x = first; x != last; x++) {
-        std::cout << *x << " ";
-    }
-    std::cout << "\n";
-}
 
 template <typename RandomIt>
 void selection_sort(RandomIt first, RandomIt last) {
