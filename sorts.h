@@ -300,7 +300,119 @@ void bottom_up_merge_sort(RandomIt first, RandomIt last) {
     for (size_t sz = 1; sz < n; sz = sz + sz) {
         for (size_t lo = 0; lo < n - sz; lo += sz + sz) {
             merge_sort_merge_smarter(aux, first + lo, first + lo + sz, std::min(first + lo + sz + sz, last));
-//            print_range(first + lo, std::min(first + lo + sz + sz, last));
+        }
+    }
+}
+
+
+template <typename RandomIt>
+RandomIt partition(RandomIt first, RandomIt last) {
+    auto p = first, i = first, j = last;
+
+    while (true) {
+        while(*(++i) < *p) {
+            if (i == last - 1) break;
+        }
+        while(*p < *(--j)) {
+            if (j == first) break;
+        }
+        if (i >= j) break;
+        std::swap(*i, *j);
+    }
+    std::swap(*p, *j);
+    return j;
+}
+
+template <typename RandomIt>
+RandomIt medianOf3(RandomIt first, RandomIt last) {
+    auto mid = std::next(first, std::distance(first, last) / 2);
+
+    if (*first < *mid) {
+        // first, mid
+        if (*mid < *last) {
+            // first, mid, last
+            return mid;
+        }
+        else {
+            if(*first < *last) {
+                // first, last, mid
+                return last;
+            }
+            else {
+                // last, first, mid
+                return first;
+            }
+        }
+    }
+    else {
+        // mid, first
+        if (*last < *mid) {
+            // last, mid, first
+            return mid;
+        }
+        else {
+            if (*last > *first) {
+                // mid, first, last
+                return first;
+            } else {
+                // mid, last, first
+                return last;
+            }
+        }
+    }
+}
+
+template <typename RandomIt>
+void quick_sort_recursive(RandomIt first, RandomIt last) {
+    long n = std::distance(first, last);
+    if (n < 5) {
+        insertion_sort(first, last);
+        return;
+    }
+
+    auto median = medianOf3(first, last - 1);
+    std::swap(*first, *median);
+
+    auto p = partition(first, last);
+    quick_sort_recursive(first, p);
+    quick_sort_recursive(p + 1, last);
+}
+
+template <typename RandomIt>
+void quick_sort(RandomIt first, RandomIt last) {
+    knuth_shuffle(first, last);
+    quick_sort_recursive(first, last);
+}
+
+template <typename RandomIt>
+RandomIt quick_select(RandomIt first, RandomIt last, long n) {
+    long dist = std::distance(first, last);
+    if (dist == 0) {
+        return last;
+    }
+    else if (dist == 1) {
+        return first;
+    }
+    else if (n >= dist) {
+        return last;
+    }
+
+    knuth_shuffle(first, last);
+    auto lo = first, hi = last;
+    auto index = [&first](RandomIt i) {
+        return std::distance(first, i);
+    };
+
+    while (true) {
+        auto p = partition(lo, hi);
+        auto index_p = index(p);
+        if (index_p == n) {
+            return p;
+        }
+        else if (index_p < n) {
+            lo = p + 1;
+        } else {
+            hi = p;
         }
     }
 }
@@ -312,6 +424,9 @@ void testSorts() {
     auto elements4 = elements;
     auto elements5 = elements;
     auto elements6 = elements;
+    auto elements7 = elements;
+    elements7 = { 4, 2, 2, 2, 2, 3, 8, 2, 2};
+    auto elements8 = elements;
     std::cout << "Test selection sort.\n";
     selection_sort(elements.begin(), elements.end());
     print_range(elements.begin(), elements.end());
@@ -339,6 +454,19 @@ void testSorts() {
     std::cout << "Test bottom up merge sort.\n";
     bottom_up_merge_sort(elements6.begin(), elements6.end());
     print_range(elements6.begin(), elements6.end());
+
+    std::cout << "Test quick sort.\n";
+    quick_sort(elements7.begin(), elements7.end());
+    print_range(elements7.begin(), elements7.end());
+
+    std::cout << "Test quick select.\n";
+    auto quick_select_it = quick_select(elements8.begin(), elements8.end(), 8);
+    if (quick_select_it != elements8.end()) {
+        std::cout << *quick_select_it << "\n";
+    }
+    else {
+        std::cout << "Element index out of bounds.\n";
+    }
 }
 
 
