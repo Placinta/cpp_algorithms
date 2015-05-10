@@ -38,6 +38,11 @@ public:
         return components[a];
     }
 
+    unsigned long findComponentMax(unsigned long a) {
+        // Not implemented.
+        return 0;
+    }
+
     unsigned long count() {
         return size;
     }
@@ -77,6 +82,11 @@ public:
         return root(a);
     }
 
+    unsigned long findComponentMax(unsigned long a) {
+        // Not implemented.
+        return 0;
+    }
+
     unsigned long count() {
         return size;
     }
@@ -91,9 +101,11 @@ public:
     WeightedQuickUnionUF (unsigned long n) : size(n) {
         parents.reserve(n);
         ranks.reserve(n);
+        maxes.reserve(n);
         for (unsigned long i = 0; i < n; i++) {
             parents[i] = i;
-            ranks[i] = i;
+            ranks[i] = 1;
+            maxes[i] = i;
         }
     }
 
@@ -104,10 +116,12 @@ public:
         if (ranks[a_component] > ranks[b_component]) {
             parents[b_component] = a_component;
             ranks[a_component] += ranks[b_component];
+            maxes[a_component] = std::max(maxes[a_component], maxes[b_component]);
         }
         else {
             parents[a_component] = b_component;
             ranks[b_component] += ranks[a_component];
+            maxes[b_component] = std::max(maxes[a_component], maxes[b_component]);
         }
         size--;
     }
@@ -128,6 +142,10 @@ public:
         return root(a);
     }
 
+    unsigned long findComponentMax(unsigned long a) {
+        return maxes[root(a)];
+    }
+
     unsigned long count() {
         return size;
     }
@@ -135,13 +153,14 @@ public:
 private:
     std::vector<unsigned long> parents;
     std::vector<unsigned long> ranks;
+    std::vector<unsigned long> maxes;
     unsigned long size;
 };
 
 template <typename Impl>
 int testUFImpl() {
     std::fstream f;
-    f.open("data/mediumUF.txt", std::fstream::in);
+    f.open("data/tinyUF.txt", std::fstream::in);
     if ( (f.rdstate() & std::ifstream::failbit ) != 0 ) {
         std::cerr << "Error opening file.\n";
         return 1;
@@ -152,7 +171,7 @@ int testUFImpl() {
         f >> n;
         auto uf = Impl(n);
 
-        for (unsigned long i = 0; i < n; i++) {
+        while(!f.eof()) {
             unsigned long a, b;
             f >> a >> b;
             uf.join(a, b);
@@ -160,8 +179,10 @@ int testUFImpl() {
 
         bool connected = uf.connected(4, 3);
         std::cout << "Connected (3,5): " << connected << std::endl;
-    }) << std::endl;
 
+        std::cout << "Max of component is: ";
+        std::cout << uf.findComponentMax(1) << std::endl;
+    }) << std::endl;
 
     f.close();
     return 0;
