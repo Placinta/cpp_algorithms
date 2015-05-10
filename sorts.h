@@ -456,6 +456,27 @@ void quick_sort_3_way(RandomIt first, RandomIt last) {
     });
 }
 
+template <typename RandomIt>
+long intersection_of_two_ranges_count(RandomIt first1, RandomIt last1, RandomIt first2, RandomIt last2) {
+    long count = 0;
+    quick_sort(first1, last1);
+    quick_sort(first2, last2);
+
+    while (first1 != last1 && first2 != last2) {
+        if (*first1 == *first2) {
+            count++;
+            ++first1;
+            ++first2;
+        } else if (*first1 < *first2) {
+            ++first1;
+        } else {
+            ++first2;
+        }
+    }
+
+    return count;
+}
+
 void testSorts() {
     std::vector<int> elements = { 4, 2, 9, 6, 7, 3, 8, 1, 5};
     auto elements2 = elements;
@@ -518,6 +539,13 @@ void testSorts() {
         return 0;
     });
     print_range(elements9.begin(), elements9.end());
+
+    std::cout << "Number of common items in the following two arrays.\n";
+    std::vector<int> a1 = {1, 3, 5, 7, 9, 1};
+    std::vector<int> a2 = {1, 2, 3, 4, 5, 1, 1};
+    print_range(a1.begin(), a1.end());
+    print_range(a2.begin(), a2.end());
+    std::cout << intersection_of_two_ranges_count(a1.begin(), a1.end(), a2.begin(), a2.end());
 }
 
 
