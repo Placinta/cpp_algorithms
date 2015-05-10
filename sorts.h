@@ -477,6 +477,27 @@ long intersection_of_two_ranges_count(RandomIt first1, RandomIt last1, RandomIt 
     return count;
 }
 
+void dutch_national_flag(std::vector<char>& a) {
+    auto n = a.size();
+    if (n <= 1) {
+        return;
+    }
+    long mid_white = 0, start_red = 0, end_blue = n - 1;
+    while (mid_white <= end_blue) {
+        if (a[mid_white] == 'w') {
+            mid_white++;
+        }
+        else if (a[mid_white] == 'b') {
+            std::swap(a[mid_white], a[end_blue]);
+            --end_blue;
+        } else {
+            std::swap(a[mid_white], a[start_red]);
+            ++mid_white;
+            ++start_red;
+        }
+    }
+}
+
 void testSorts() {
     std::vector<int> elements = { 4, 2, 9, 6, 7, 3, 8, 1, 5};
     auto elements2 = elements;
@@ -546,6 +567,13 @@ void testSorts() {
     print_range(a1.begin(), a1.end());
     print_range(a2.begin(), a2.end());
     std::cout << intersection_of_two_ranges_count(a1.begin(), a1.end(), a2.begin(), a2.end());
+
+    std::cout << "Dutch national flag array.\n";
+    std::vector<char> dutch = {'r', 'w', 'b', 'r', 'b', 'b', 'r', 'w', 'b', 'w'};
+    print_range(dutch.begin(), dutch.end());
+    std::cout << "Dutch national flag array sorted in O(n).\n";
+    dutch_national_flag(dutch);
+    print_range(dutch.begin(), dutch.end());
 }
 
 
