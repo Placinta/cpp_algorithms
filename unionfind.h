@@ -218,6 +218,23 @@ private:
     unsigned long size;
 };
 
+class SuccessorOfIncreasingNumbers {
+public:
+    SuccessorOfIncreasingNumbers(unsigned long n) : uf(n) {};
+
+    void remove(unsigned long i) {
+        uf.join(i, i + 1);
+    }
+
+    unsigned long successor(unsigned long i) {
+        return uf.findComponentMax(i);
+    }
+
+private:
+    WeightedQuickUnionUF uf;
+};
+
+
 template <typename Impl>
 int testUFImpl() {
     std::fstream f;
@@ -259,6 +276,12 @@ int testUF() {
     testUFImpl<WeightedQuickUnionUF>();
     std::cout << "Testing weighted quick union ranked by height.\n";
     testUFImpl<WeightedQuickUnionUFHeight>();
+
+    std::cout << "Test successors.\n";
+    SuccessorOfIncreasingNumbers successors(10);
+    successors.remove(3);
+    successors.remove(4);
+    std::cout << successors.successor(3);
     return 0;
 }
 
