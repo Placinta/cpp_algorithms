@@ -5,6 +5,7 @@
 #include "sorts.h"
 #include "5algs.h"
 #include "priority_queue.h"
+#include "bst.h"
 
 int main() {
     testUF();
@@ -15,5 +16,6 @@ int main() {
     testGrahamScan();
     test5Algs();
     testPriorityQueue();
+    testBST();
     return 0;
 }
