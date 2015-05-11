@@ -574,6 +574,28 @@ void testSorts() {
     std::cout << "Dutch national flag array sorted in O(n).\n";
     dutch_national_flag(dutch);
     print_range(dutch.begin(), dutch.end());
+
+    std::vector<int> elements10 = {1, 2, 2, 3, 4, 6, 7, 9};
+    int val = 7;
+    std::cout << "Binary search for value " << val << " in vector\n";
+    print_range(elements10.begin(), elements10.end());
+    long index = binary_search_vector(elements10, val);
+    if (index != -1) {
+        std::cout << "Value " << val << " was found at position " << index << std::endl;
+    }
+    else {
+        std::cout << "Value " << val << " was not found.\n";
+    }
+
+    std::cout << "Binary search for value " << val << " in range\n";
+    print_range(elements10.begin(), elements10.end());
+    auto it = binary_search_in_range(elements10.begin(), elements10.end(), val);
+    if (it != elements10.end()) {
+        std::cout << "Value " << val << " was found at position " << *it << std::endl;
+    }
+    else {
+        std::cout << "Value " << val << " was not found.\n";
+    }
 }
 
 

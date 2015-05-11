@@ -16,4 +16,44 @@ void print_range(It first, It last) {
 }
 
 
+template <typename T>
+long binary_search_vector(std::vector<T>& elements, T val) {
+    typename std::remove_reference<decltype(elements)>::type::size_type n = elements.size();
+    if (n < 1) return -1;
+    typename std::remove_reference<decltype(elements)>::type::difference_type lo = 0;
+    typename std::remove_reference<decltype(elements)>::type::difference_type hi = n - 1;
+    while (lo <= hi) {
+        typename std::remove_reference<decltype(elements)>::type::difference_type mid = lo + (hi - lo) / 2;
+        if (elements[mid] < val) {
+            lo = mid + 1;
+        }
+        else if (elements[mid] > val) {
+            hi = mid - 1;
+        }
+        else return mid;
+    }
+
+    return -1;
+}
+
+template <typename RandomIt>
+RandomIt binary_search_in_range(RandomIt first, RandomIt last, typename RandomIt::value_type val) {
+    typename RandomIt::difference_type n = std::distance(first, last);
+    if (n < 1) return last;
+    auto lo = first;
+    auto hi = last - 1;
+    while (lo <= hi) {
+        auto mid = std::next(lo, std::distance(lo, hi) / 2);
+        if (*mid < val) {
+            lo = mid + 1;
+        }
+        else if (*mid > val) {
+            hi = mid - 1;
+        }
+        else return mid;
+    }
+
+    return last;
+}
+
 #endif //ALGS_UTILS_H
