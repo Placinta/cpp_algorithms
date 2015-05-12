@@ -6,6 +6,7 @@
 #include "5algs.h"
 #include "priority_queue.h"
 #include "bst.h"
+#include "llrb.h"
 
 int main() {
     testUF();
@@ -17,5 +18,6 @@ int main() {
     test5Algs();
     testPriorityQueue();
     testBST();
+    testLLRB();
     return 0;
 }

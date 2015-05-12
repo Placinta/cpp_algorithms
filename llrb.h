@@ -2,20 +2,22 @@
 // Created by Placinta on 5/11/15.
 //
 
-#ifndef ALGS_BST_H
-#define ALGS_BST_H
+#ifndef ALGS_LLRB_H
+#define ALGS_LLRB_H
 
 template <typename Key, typename Value>
-class BST {
+class LLRB {
 public:
     struct TreeNode;
     typedef std::shared_ptr<TreeNode> NodeP;
+    typedef std::pair<Key, bool> MaybeKey;
     typedef std::pair<Value, bool> MaybeValue;
+    enum class Color {RED, BLACK};
 
     typedef struct TreeNode {
-        TreeNode() : key(), value(), left(nullptr), right(nullptr), _size(0) {}
-        TreeNode(Key _key, Value _val) : key(_key), value(_val), left(nullptr), right(nullptr), _size(1) {}
-        TreeNode(Key _key, Value _val, NodeP _left, NodeP _right) : key(_key), value(_val), left(_left), right(_right), _size(0) {}
+        TreeNode() : key(), value(), left(nullptr), right(nullptr), _size(0), color(Color::RED) {}
+        TreeNode(Key _key, Value _val) : key(_key), value(_val), left(nullptr), right(nullptr), _size(1), color(Color::RED) {}
+        TreeNode(Key _key, Value _val, NodeP _left, NodeP _right) : key(_key), value(_val), left(_left), right(_right), _size(0), color(Color::RED) {}
 
         bool operator==(const TreeNode& other) {
             return key == other.key;
@@ -62,15 +64,58 @@ public:
         Value value;
         NodeP left;
         NodeP right;
+        Color color;
 
     private:
         size_t _size;
     } TreeNode;
 
-    BST() : root() {}
+    LLRB() : root() {}
 
     void insert(Key key, Value val) {
         root = insert(root, key, val);
+        root->color = Color::BLACK;
+    }
+
+    bool isRed(NodeP node) {
+        return node != nullptr && node->color == Color::RED;
+    }
+
+    NodeP rotateLeft(NodeP node) {
+        assert(isRed(node->right));
+        NodeP t = node->right;
+        auto node_2 = node;
+        auto t_2 = t;
+        node->right = t->left;
+        t->left = node;
+        t->color = node->color;
+        node->color = Color::RED;
+        node->size(1 + size(node->left) + size(node->right));
+        return t;
+    }
+
+    NodeP rotateRight(NodeP node) {
+        assert(isRed(node->left));
+        NodeP t = node->left;
+        auto node_2 = node;
+        auto t_2 = t;
+        node->left = t->right;
+        t->right = node;
+        t->color = node->color;
+        node->color = Color::RED;
+        node->size(1 + size(node->left) + size(node->right));
+        return t;
+
+    }
+
+    void flipColors(NodeP node) {
+        auto node_2 = node;
+        assert(!isRed(node));
+        assert(isRed(node->left));
+        assert(isRed(node->right));
+        node->color = Color::RED;
+        node->left->color = Color::BLACK;
+        node->right->color = Color::BLACK;
     }
 
     NodeP insert(NodeP node, Key key, Value val) {
@@ -88,6 +133,14 @@ public:
         else {
             node->value = val;
         }
+
+        if (isRed(node->right) && !isRed(node->left)) { node = rotateLeft(node); }
+        if (isRed(node->left) && isRed(node->left->left)) { node = rotateRight(node); }
+        if (isRed(node->left) && isRed(node->right)) {
+            auto node_2 = node;
+            flipColors(node);
+        }
+
         node->size(1 + size(node->left) + size(node->right));
 
         return node;
@@ -156,6 +209,15 @@ public:
         return node;
     }
 
+    size_t height() {
+        return height(root);
+    }
+
+    size_t height(NodeP node) {
+        if (node == nullptr) return 0;
+        return 1 + std::max(height(node->left), height(node->right));
+    }
+
     NodeP findMinNode(NodeP node) {
         if (node == nullptr) return node;
         while (node->left != nullptr) {
@@ -190,6 +252,99 @@ public:
         else {
             return std::make_pair(Value(), false);
         }
+    }
+
+    /**
+     * The k'th key in the tree (the key of rank k).
+     */
+    MaybeKey select(size_t k) {
+        if (k < 0 || k >= size()) {
+            return std::make_pair(Key(), false);
+        }
+        NodeP node = select(root, k);
+        if (node != nullptr) {
+            return std::make_pair(node->key, true);
+        }
+        return std::make_pair(Key(), false);
+    }
+
+    NodeP select(NodeP node, size_t k) {
+        assert(node != nullptr);
+        assert(k >= 0 && k < size(node));
+        size_t t = size(node->left);
+        if (k < t) return select(node->left, k);
+        else if (k > t) return select(node->right, k - t - 1);
+        else if (t == k) return node;
+        else return nullptr;
+    }
+
+    /**
+     * Number of keys less than k.
+     */
+    size_t rank(Key k) {
+        return rank(root, k);
+    }
+
+    size_t rank(NodeP node, size_t k) {
+        if (node == nullptr) return 0;
+        if (k < node->key) {
+            return rank(node->left, k);
+        }
+        else if (k > node->key) {
+            return 1 + size(node->left) + rank(node->right, k);
+        }
+        else /* if (node->key == k) */ {
+            return size(node->left);
+        }
+    }
+
+    /**
+     * The largest key less than or equal to k.
+     */
+    MaybeKey floor(Key k) {
+        NodeP node = floor(root, k);
+        if (node != nullptr) {
+            return std::make_pair(node->key, true);
+        }
+        return std::make_pair(Key(), false);
+
+    }
+
+    NodeP floor(NodeP node, Key k) {
+        if (node == nullptr) return nullptr;
+        if (k < node->key) {
+            return floor(node->left, k);
+        }
+        else if (k == node->key) {
+            return node;
+        }
+        NodeP right = floor(node->right, k);
+        if (right != nullptr) return right;
+        else return node;
+    }
+
+    /**
+     * The smallest key greater than or equal to k.
+     */
+    MaybeKey ceiling(Key k) {
+        NodeP node = ceiling(root, k);
+        if (node != nullptr) {
+            return std::make_pair(node->key, true);
+        }
+        return std::make_pair(Key(), false);
+    }
+
+    NodeP ceiling(NodeP node, Key k) {
+        if (node == nullptr) return nullptr;
+        if (k > node->key) {
+            return ceiling(node->right, k);
+        }
+        else if (k == node->key) {
+            return node;
+        }
+        NodeP left = ceiling(node->left, k);
+        if (left != nullptr) return left;
+        else return node;
     }
 
     bool contains(Key key) {
@@ -270,6 +425,51 @@ public:
 
         prev = node;
         return isBSTInorderTraversal(node->right, prev);
+    }
+
+    bool is23() {
+        return is23(root);
+    }
+
+    bool is23(NodeP node) {
+        if (node == nullptr) return true;
+        if (isRed(node->right)) return false;
+        if (isRed(node->left) && isRed(node)) return false;
+        return is23(node->left) && is23(node->right);
+    }
+
+    bool isBalanced() {
+        size_t max_black_links = 0;
+        NodeP max = root;
+        while (max != nullptr) {
+            if (!isRed(max)) max_black_links++;
+            max = max->left;
+        }
+        return isBalanced(root, max_black_links);
+    }
+
+    bool isBalanced(NodeP node, size_t current_black_links) {
+        if (node == nullptr) return current_black_links == 0;
+        if (!isRed(node)) current_black_links--;
+        return isBalanced(node->left, current_black_links) && isBalanced(node->right, current_black_links);
+    }
+
+    bool isSizeConsistent() {
+        return isSizeConsistent(root);
+    }
+
+    bool isSizeConsistent(NodeP node) {
+        if (node == nullptr) return true;
+        if (size(node) != size(node->left) + size(node->right) + 1) return false;
+        return isSizeConsistent(node->left) && isSizeConsistent(node->right);
+    }
+
+    bool checkIntegrity() {
+        if (!isBST()) std::cout << "Tree is not in symmetric order.\n";
+        if (!isSizeConsistent()) std::cout << "Tree sizes are not correct.\n";
+        if (!is23()) std::cout << "Tree is not in a 2-3 tree.\n";
+        if (!isBalanced()) std::cout << "Tree is not balanced.\n";
+        return isBST() && isSizeConsistent() && is23() && isBalanced();
     }
 
     enum class Order {PRE_ORDER, IN_ORDER, POST_ORDER};
@@ -421,7 +621,7 @@ public:
     void printPreOrderValues() {
         std::cout << "Pre order iterator traversal.\n";
         for (auto it = beginPreOrder(); it != end(); it++) {
-            std::cout << (*it).second;
+            std::cout << (*it).second << " ";
         }
         std::cout << std::endl;
     }
@@ -429,7 +629,7 @@ public:
     void printInOrderValues() {
         std::cout << "In order iterator traversal.\n";
         for (auto pair: *this) {
-            std::cout << pair.second;
+            std::cout << pair.second << " ";
         }
         std::cout << std::endl;
     }
@@ -438,36 +638,48 @@ private:
 };
 
 template <typename Key, typename Value>
-void printMaybeValue(typename BST<Key, Value>::MaybeValue maybeValue) {
-    if (maybeValue.second) {
-        std::cout << maybeValue.second << std::endl;
+void printMaybeKey(typename LLRB<Key, Value>::MaybeKey maybeKey) {
+    if (maybeKey.first) {
+        std::cout << maybeKey.first << std::endl;
     } else {
-        std::cout << "Element not found.\n";
+        std::cout << "Key not found.\n";
     }
 }
 
-
-void testBST() {
-    BST<int, int> bst;
-    bst.insert(2, 2);
-    bst.insert(1, 1);
-    bst.insert(5, 5);
-    bst.insert(3, 3);
-    bst.insert(4, 4);
-    bst.print();
-    auto elem = bst.get(4);
+void testLLRB() {
+    LLRB<int, int> llrb;
+    llrb.insert(5, 5);
+    llrb.insert(4, 4);
+    llrb.insert(3, 3);
+    llrb.insert(2, 2);
+    llrb.insert(1, 1);
+    llrb.print();
+    auto elem = llrb.get(4);
     printMaybeValue<int, int>(elem);
-    bst.remove(2);
-    bst.print();
-    printMaybeValue<int, int>(bst.getMax());
-    printMaybeValue<int, int>(bst.getMin());
-    std::cout << "Tree is a BST: " << bst.isBST() << std::endl;
-    std::cout << "Tree is a BST: " << bst.isBSTInefficient() << std::endl;
-    std::cout << "Tree is a BST: " << bst.isBSTInorderTraversal() << std::endl;
+//    bst.remove(2);
+    llrb.print();
+    std::cout << "Height of tree is: " << llrb.height() << std::endl;
+    std::cout << "Max: "; printMaybeValue<int, int>(llrb.getMax());
+    std::cout << "Min: "; printMaybeValue<int, int>(llrb.getMin());
+    size_t rank = 2;
+    std::cout << "Element of rank " << rank << ": "; printMaybeKey<int, int>(llrb.select(rank));;
+    int key = 3;
+    std::cout << "Rank of key " << key << ": " << llrb.rank(key) << std::endl;
+    int floor = 7;
+    int ceiling = 0;
+    std::cout << "Floor of key " << floor << ": "; printMaybeKey<int, int>(llrb.floor(floor));
+    std::cout << "Ceiling of key " << ceiling << ": "; printMaybeKey<int, int>(llrb.ceiling(ceiling));
+    std::cout << "Tree is a BST: " << llrb.isBST() << std::endl;
+    std::cout << "Tree is a BST: " << llrb.isBSTInefficient() << std::endl;
+    std::cout << "Tree is a BST: " << llrb.isBSTInorderTraversal() << std::endl;
+    std::cout << "Tree sizes are correct: " << llrb.isSizeConsistent() << std::endl;
+    std::cout << "Is 2-3 tree: " << llrb.is23() << std::endl;
+    std::cout << "Is balanced tree: " << llrb.isBalanced() << std::endl;
+    llrb.checkIntegrity();
 
-    bst.printPreOrderValues();
-    bst.printInOrderValues();
+    llrb.printPreOrderValues();
+    llrb.printInOrderValues();
 }
 
 
-#endif //ALGS_BST_H
+#endif //ALGS_LLRB_H
