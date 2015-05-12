@@ -252,6 +252,26 @@ public:
         }
     }
 
+    bool isBSTInorderTraversal() {
+        if (size() < 2) return true;
+        NodeP prev = nullptr;
+        return isBSTInorderTraversal(root, prev);
+    }
+
+    bool isBSTInorderTraversal(NodeP node, NodeP& prev) {
+        if (node == nullptr) return true;
+        if (!isBSTInorderTraversal(node->left, prev)) {
+            return false;
+        }
+
+        if (prev != nullptr && node->key <= prev->key) {
+            return false;
+        }
+
+        prev = node;
+        return isBSTInorderTraversal(node->right, prev);
+    }
+
     enum class Order {PRE_ORDER, IN_ORDER, POST_ORDER};
 
     template <typename Func>
@@ -289,6 +309,130 @@ public:
         std::cout << std::endl;
     }
 
+    typedef std::pair<const Key, Value> value_type;
+
+    class iterator : public std::iterator<std::forward_iterator_tag, value_type> {
+        NodeP root, right, curr, parent, item, pred;
+        Order order;
+    public:
+        iterator(NodeP _root, Order _order = Order::IN_ORDER) : root(_root), right(nullptr), curr(_root), parent(_root),
+                                item(nullptr), order(_order) { increment(); }
+
+        void increment() {
+            if (order == Order::PRE_ORDER) incrementPreOrder();
+            if (order == Order::IN_ORDER) incrementInOrder();
+        }
+
+        void incrementPreOrder() {
+            bool element_found = false;
+            item = nullptr;
+            while (parent != nullptr && !element_found) {
+                curr = parent->left;
+                if (curr != nullptr) {
+                    // search for thread
+                    while (curr != right && curr->right != nullptr)
+                        curr = curr->right;
+
+                    if (curr != right) {
+                        // insert thread
+                        assert(curr->right == nullptr);
+                        curr->right = parent;
+                        // The item to be traversed.
+                        item = parent;
+                        parent = parent->left;
+                        element_found = true;
+                        continue;
+                    } else
+                        // remove thread, left subtree of P already traversed
+                        // this restores the node to original state
+                        curr->right = nullptr;
+                } else {
+                    // The item to be traversed.
+                    item = parent;
+                    element_found = true;
+                }
+
+                right = parent;
+                parent = parent->right;
+            }
+        }
+
+        void incrementInOrder() {
+            bool element_found = false;
+            item = nullptr;
+            while (curr != nullptr && !element_found) {
+                auto curr_item = *curr;
+                if (curr->left == nullptr) {
+                    item = curr;
+                    curr = curr->right;
+                    element_found = true;
+                }
+                else {
+                    // Find predecessor.
+                    pred = curr->left;
+                    while (pred->right != nullptr && pred->right != curr) {
+                        pred = pred->right;
+                    }
+
+                    if (pred->right == nullptr) {
+                        // Make current be the succesor of predecesor (link back to parent essentially).
+                        pred->right = curr;
+                        curr = curr->left;
+                    }
+                    else {
+                        // Remove the link back, because we already traversed the whole left sub-tree.
+                        pred->right = nullptr;
+                        item = curr;
+                        element_found = true;
+                        curr = curr->right;
+                    }
+                }
+            }
+        }
+
+        iterator &operator++() {
+            increment();
+            return *this;
+        }
+
+        iterator operator++(int) {
+            iterator tmp(*this);
+            increment();
+            return tmp;
+        }
+
+        bool operator==(const iterator &other) const {
+            return (item == nullptr && other.item == nullptr) || (item != nullptr && other.item != nullptr && *item == *other.item);
+        }
+
+        bool operator!=(const iterator &other) const {
+            return !((*this) == other);
+        }
+
+        value_type operator*() const {
+            return std::make_pair(item->key, item->value);
+        }
+    };
+
+    iterator begin() { return iterator(root); }
+    iterator beginPreOrder() { return iterator(root, Order::PRE_ORDER); }
+    iterator end() { return iterator(nullptr); }
+
+    void printPreOrderValues() {
+        std::cout << "Pre order iterator traversal.\n";
+        for (auto it = beginPreOrder(); it != end(); it++) {
+            std::cout << (*it).second;
+        }
+        std::cout << std::endl;
+    }
+
+    void printInOrderValues() {
+        std::cout << "In order iterator traversal.\n";
+        for (auto pair: *this) {
+            std::cout << pair.second;
+        }
+        std::cout << std::endl;
+    }
 private:
     NodeP root;
 };
@@ -318,6 +462,11 @@ void testBST() {
     printMaybeValue<int, int>(bst.getMax());
     printMaybeValue<int, int>(bst.getMin());
     std::cout << "Tree is a BST: " << bst.isBST() << std::endl;
+    std::cout << "Tree is a BST: " << bst.isBSTInefficient() << std::endl;
+    std::cout << "Tree is a BST: " << bst.isBSTInorderTraversal() << std::endl;
+
+    bst.printPreOrderValues();
+    bst.printInOrderValues();
 }
 
 
