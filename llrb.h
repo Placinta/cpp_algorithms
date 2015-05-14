@@ -5,6 +5,8 @@
 #ifndef ALGS_LLRB_H
 #define ALGS_LLRB_H
 
+#include <iomanip>
+
 template <typename Key, typename Value>
 class LLRB {
 public:
@@ -633,6 +635,75 @@ public:
         }
         std::cout << std::endl;
     }
+
+
+    void printASCIITree() {
+        if (isEmpty()) return;
+        std::vector<std::string> output(height());
+        NodeP max = findMaxNode(root);
+        Key key = max->key;
+        Value val = max->value;
+        auto key_length = std::to_string(key).length();
+        auto value_length = std::to_string(val).length();
+
+        // "(Key, Value)" character length
+        size_t width = key_length + value_length + 4;
+
+        printASCIITree(root, 0, 0, 0, output, width, key_length, value_length);
+
+        for(auto& row : output) {
+            std::cout << row << std::endl;
+        }
+    }
+
+    void stringResizeIfSmaller(std::string& s, size_t capacity, char fillChar = ' ') {
+        if (s.length() <  capacity) {
+            s.resize(capacity, fillChar);
+        }
+    }
+
+    size_t printASCIITree(NodeP node, bool is_left, size_t offset, size_t depth, std::vector<std::string>& output, const size_t width, const size_t key_length, const size_t value_length) {
+        if (node == nullptr) return 0;
+
+        // Create the key, value pair string output representation.
+        std::stringstream ss;
+        ss << '(' << std::setw(
+                static_cast<int>(key_length)) << node->key << ", " << std::setw(
+                static_cast<int>(value_length)) << node->value << ')';
+        std::string pair_output(ss.str());
+
+        // Get how many characters does the left and right sub-trees occupy, as well as print them into the buffer.
+        size_t left = printASCIITree(node->left, true, offset, depth + 1, output, width, key_length, value_length);
+        size_t right = printASCIITree(node->right, false, offset + left + width, depth + 1, output, width, key_length, value_length);
+
+        // Compute how many characters will be needed to store the 'depth'-th row of output.
+        size_t char_length_required = offset + left + width;
+        stringResizeIfSmaller(output[depth], char_length_required, ' ');
+
+        // Add the output of the key-value pair to the output buffer.
+        output[depth].replace(offset + left, pair_output.length(), pair_output);
+
+        // Draw the left arrows.
+        if (depth && is_left) {
+            size_t replace_count = left + width / 2;
+            stringResizeIfSmaller(output[depth - 1], offset + left + width / 2 + replace_count, ' ');
+            output[depth - 1].replace(offset + left + width / 2, replace_count, replace_count, '-');
+            output[depth - 1].replace(offset + left + width / 2, 1, 1, '.');
+        }
+
+        // Draw right arrows.
+        else if (depth && !is_left) {
+            size_t replace_count = left + width / 2;
+            stringResizeIfSmaller(output[depth - 1], offset + replace_count, ' ');
+            output[depth - 1].replace(offset, replace_count, replace_count, '-');
+            output[depth - 1].replace(offset + replace_count, 1, 1, '.');
+        }
+
+        // Return the length of characters that the sub-tree uses to display itself.
+        // This includes the number of characters for the left sub tree + current sub-tree root + right sub tree.
+        return left + width + right;
+    }
+
 private:
     NodeP root;
 };
@@ -653,6 +724,17 @@ void testLLRB() {
     llrb.insert(3, 3);
     llrb.insert(2, 2);
     llrb.insert(1, 1);
+    llrb.insert(6, 6);
+    llrb.insert(7, 7);
+    llrb.insert(8, 8);
+    llrb.insert(9, 9);
+    llrb.insert(10, 10);
+    llrb.insert(11, 11);
+    llrb.insert(12, 12);
+    llrb.insert(13, 13);
+    llrb.insert(14, 14);
+    llrb.insert(15, 15);
+    llrb.insert(16, 16);
     llrb.print();
     auto elem = llrb.get(4);
     printMaybeValue<int, int>(elem);
@@ -679,6 +761,8 @@ void testLLRB() {
 
     llrb.printPreOrderValues();
     llrb.printInOrderValues();
+
+    llrb.printASCIITree();
 }
 
 
