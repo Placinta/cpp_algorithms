@@ -636,20 +636,33 @@ public:
         std::cout << std::endl;
     }
 
-
-    void printASCIITree() {
+    void printASCIITree(bool use_max_node_key_length_as_max_width = true, size_t max_key_length = 5, size_t max_value_length = 5) {
         if (isEmpty()) return;
-        std::vector<std::string> output(height());
-        NodeP max = findMaxNode(root);
-        Key key = max->key;
-        Value val = max->value;
-        auto key_length = std::to_string(key).length();
-        auto value_length = std::to_string(val).length();
+
+        // Prepare an array of strings that will be manipulated to display the tree nodes.
+        size_t additional_root_color_row = 1;
+        std::vector<std::string> output(height() + additional_root_color_row);
+
+        size_t key_length;
+        size_t value_length;
+
+        // Find the longest key, to define the width. This is not 100% full-proof.
+        if (use_max_node_key_length_as_max_width) {
+            NodeP max = findMaxNode(root);
+            Key key = max->key;
+            Value val = max->value;
+            key_length = std::to_string(key).length();
+            value_length = std::to_string(val).length();
+        }
+        else {
+            key_length = max_key_length;
+            value_length = max_value_length;
+        }
 
         // "(Key, Value)" character length
         size_t width = key_length + value_length + 4;
 
-        printASCIITree(root, 0, 0, 0, output, width, key_length, value_length);
+        printASCIITree(root, 0, 0, 1, output, width, key_length, value_length);
 
         for(auto& row : output) {
             std::cout << row << std::endl;
@@ -660,6 +673,11 @@ public:
         if (s.length() <  capacity) {
             s.resize(capacity, fillChar);
         }
+    }
+
+    char getASCIINodeColor(NodeP node) {
+        if (isRed(node)) return 'R';
+        else return 'B';
     }
 
     size_t printASCIITree(NodeP node, bool is_left, size_t offset, size_t depth, std::vector<std::string>& output, const size_t width, const size_t key_length, const size_t value_length) {
@@ -683,21 +701,31 @@ public:
         // Add the output of the key-value pair to the output buffer.
         output[depth].replace(offset + left, pair_output.length(), pair_output);
 
-        // Draw the left arrows.
+        // Draw the left arrows and node color.
         if (depth && is_left) {
             size_t replace_count = left + width / 2;
             stringResizeIfSmaller(output[depth - 1], offset + left + width / 2 + replace_count, ' ');
             output[depth - 1].replace(offset + left + width / 2, replace_count, replace_count, '-');
-            output[depth - 1].replace(offset + left + width / 2, 1, 1, '.');
+            output[depth - 1].replace(offset + left + width / 2, 1, 1, getASCIINodeColor(node));
         }
 
-        // Draw right arrows.
+        // Draw right arrows and node color.
         else if (depth && !is_left) {
             size_t replace_count = left + width / 2;
             stringResizeIfSmaller(output[depth - 1], offset + replace_count, ' ');
             output[depth - 1].replace(offset, replace_count, replace_count, '-');
-            output[depth - 1].replace(offset + replace_count, 1, 1, '.');
+            output[depth - 1].replace(offset + replace_count, 1, 1, getASCIINodeColor(node));
         }
+
+        // Root node.
+        if (depth == 1) {
+            // Make sure no lines are displayed for root node.
+            output[depth - 1].replace(0, left + width / 2, left + width / 2, ' ');
+
+            // Display the root color.
+            output[depth - 1].replace(left + width / 2, 1, 1, getASCIINodeColor(node));
+        }
+
 
         // Return the length of characters that the sub-tree uses to display itself.
         // This includes the number of characters for the left sub tree + current sub-tree root + right sub tree.
@@ -762,7 +790,7 @@ void testLLRB() {
     llrb.printPreOrderValues();
     llrb.printInOrderValues();
 
-    llrb.printASCIITree();
+    llrb.printASCIITree(false, 1, 1);
 }
 
 
