@@ -7,6 +7,7 @@
 #include "priority_queue.h"
 #include "bst.h"
 #include "llrb.h"
+#include "hash_table.h"
 
 int main() {
     testUF();
@@ -19,5 +20,6 @@ int main() {
     testPriorityQueue();
     testBST();
     testLLRB();
+    testHashTable();
     return 0;
 }
