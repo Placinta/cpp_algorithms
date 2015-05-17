@@ -77,6 +77,7 @@ public:
     void insert(Key key, Value val) {
         root = insert(root, key, val);
         root->color = Color::BLACK;
+        assert(checkIntegrity());
     }
 
     bool isRed(NodeP node) {
@@ -111,13 +112,18 @@ public:
     }
 
     void flipColors(NodeP node) {
-        auto node_2 = node;
-        assert(!isRed(node));
-        assert(isRed(node->left));
-        assert(isRed(node->right));
-        node->color = Color::RED;
-        node->left->color = Color::BLACK;
-        node->right->color = Color::BLACK;
+        assert(node != nullptr && node->left != nullptr && node->right != nullptr);
+        assert((!isRed(node) && isRed(node->left) && isRed(node->right)) || (isRed(node) && !isRed(node->left) && !isRed(node->right)));
+        node->color = flipOneColor(node->color);
+        node->left->color = flipOneColor(node->left->color);
+        node->right->color = flipOneColor(node->right->color);
+    }
+
+    Color flipOneColor(Color color) {
+        if (color == Color::RED) {
+            return Color::BLACK;
+        }
+        return Color::RED;
     }
 
     NodeP insert(NodeP node, Key key, Value val) {
@@ -138,10 +144,7 @@ public:
 
         if (isRed(node->right) && !isRed(node->left)) { node = rotateLeft(node); }
         if (isRed(node->left) && isRed(node->left->left)) { node = rotateRight(node); }
-        if (isRed(node->left) && isRed(node->right)) {
-            auto node_2 = node;
-            flipColors(node);
-        }
+        if (isRed(node->left) && isRed(node->right)) { flipColors(node); }
 
         node->size(1 + size(node->left) + size(node->right));
 
@@ -173,41 +176,110 @@ public:
     }
 
     void remove(Key key) {
+        if (!contains(key)) return;
+
+        if (!isRed(root->left) && !isRed(root->right)) {
+            root->color = Color::RED;
+        }
         root = remove(root, key);
+        if (!isEmpty()) {
+            root->color = Color::BLACK;
+        }
+        assert(checkIntegrity());
     }
 
     NodeP remove(NodeP node, Key key) {
         if (node == nullptr) return nullptr;
         if (key < node->key) {
+            if (!isRed(node->left) && !isRed(node->left->left)) {
+                node = moveRedLeft(node);
+            }
             node->left = remove(node->left, key);
         }
-        else if (key > node->key) {
-            node->right = remove(node->right, key);
-        }
         else {
-            auto element_count = size(node);
-            if (element_count == 1) {
-                // No children case.
+            if (isRed(node->left)) {
+                node = rotateRight(node);
+            }
+            if (key == node->key && node->right == nullptr) {
                 return nullptr;
             }
-            else if (element_count == 2) {
-                // One child case.
-                NodeP child = node->left;
-                if (node->right != nullptr) {
-                    child = node->right;
-                }
-                return child;
+            if (!isRed(node->right) && !isRed(node->right->left)) {
+                node = moveRedRight(node);
+            }
+            if (key == node->key) {
+                auto min = findMinNode(node->right);
+                node->value = min->value;
+                node->key = min->key;
+                node->right = deleteMin(node->right);
             }
             else {
-                // Two children case.
-                NodeP successor = findMinNode(node->right);
-                successor->right = remove(node->right, successor->key);
-                successor->left = node->left;
-                node = successor;
+                node->right = remove(node->right, key);
             }
         }
 
         node->size(1 + size(node->left) + size(node->right));
+        return balance(node);
+    }
+
+    NodeP moveRedLeft(NodeP node) {
+        assert(isRed(node));
+        assert(!isRed(node->left));
+        assert(!isRed(node->left->left));
+        flipColors(node);
+        if (isRed(node->right->left)) {
+            node->right = rotateRight(node->right);
+            node = rotateLeft(node);
+            flipColors(node);
+        }
+        return node;
+    }
+
+    NodeP moveRedRight(NodeP node) {
+        assert(isRed(node));
+        assert(!isRed(node->right));
+        assert(!isRed(node->right->left));
+        flipColors(node);
+        if (isRed(node->left->left)) {
+            node = rotateRight(node);
+            flipColors(node);
+        }
+        return node;
+    }
+
+    void deleteMin() {
+        if (isEmpty()) {
+            std::cerr << "No element to remove.\n";
+            return;
+        }
+
+        if (!isRed(root->left) && !isRed(root->right)) {
+            root->color = Color::RED;
+        }
+        root = deleteMin(root);
+        if (!isEmpty()) root->color = Color::BLACK;
+    }
+
+    NodeP deleteMin(NodeP node) {
+        if (node->left == nullptr) {
+            return nullptr;
+        }
+
+        if (!isRed(node->left) && !isRed(node->left->left)) {
+            node = moveRedLeft(node);
+        }
+
+        node->left = deleteMin(node->left);
+        return balance(node);
+    }
+
+    NodeP balance(NodeP node) {
+        assert(node != nullptr);
+        if (isRed(node->right)) {node = rotateLeft(node); }
+        if (isRed(node->left) && isRed(node->left->left)) { node = rotateRight(node); }
+        if (isRed(node->left) && isRed(node->right)) { flipColors(node); }
+
+        node->size(1 + size(node->left) + size(node->right));
+
         return node;
     }
 
@@ -766,7 +838,6 @@ void testLLRB() {
     llrb.print();
     auto elem = llrb.get(4);
     printMaybeValue<int, int>(elem);
-//    bst.remove(2);
     llrb.print();
     std::cout << "Height of tree is: " << llrb.height() << std::endl;
     std::cout << "Max: "; printMaybeValue<int, int>(llrb.getMax());
@@ -789,6 +860,20 @@ void testLLRB() {
 
     llrb.printPreOrderValues();
     llrb.printInOrderValues();
+
+    llrb.printASCIITree(false, 1, 1);
+
+    // Remove some items.
+    llrb.remove(2);
+    llrb.remove(10);
+    llrb.remove(4);
+    llrb.remove(11);
+    llrb.remove(16);
+    llrb.remove(8);
+    llrb.remove(1);
+    llrb.remove(12);
+    llrb.remove(5);
+    llrb.remove(3);
 
     llrb.printASCIITree(false, 1, 1);
 }
