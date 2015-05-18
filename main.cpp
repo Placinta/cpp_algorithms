@@ -8,6 +8,7 @@
 #include "bst.h"
 #include "llrb.h"
 #include "hash_table.h"
+#include "threads.h"
 
 int main() {
     testUF();
@@ -21,5 +22,6 @@ int main() {
     testBST();
     testLLRB();
     testHashTable();
+    testThreads();
     return 0;
 }
