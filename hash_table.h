@@ -7,6 +7,7 @@
 
 class Person {
 public:
+    Person() {}
     Person(std::string first, std::string last) : first_name(first), last_name(last) {}
 
     size_t hash() const {
@@ -27,8 +28,8 @@ public:
     }
 
 private:
-    std::string first_name;
-    std::string last_name;
+    std::string first_name = "";
+    std::string last_name = "";
 };
 
 namespace std {
@@ -131,8 +132,8 @@ public:
                 return;
             }
         }
-//        getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)));
-        getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)), NodeRemoveLog);
+        getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)));
+//        getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)), NodeRemoveLog);
         element_count++;
     }
 
@@ -256,6 +257,170 @@ private:
 };
 
 template <typename Key, typename Value>
+class LinearProbingHashSymbolTable {
+    typedef std::shared_ptr<Key> KeyArrayP;
+    typedef std::shared_ptr<Value> ValueArrayP;
+    typedef std::shared_ptr<bool> BoolArrayP;
+
+public:
+    typedef std::pair<Key, bool> MaybeKey;
+    typedef std::pair<Value, bool> MaybeValue;
+
+public:
+    LinearProbingHashSymbolTable() : LinearProbingHashSymbolTable(default_capacity) {}
+
+    LinearProbingHashSymbolTable(size_t _capacity) : capacity(_capacity) {
+        auto p = booleans.get();
+        std::uninitialized_fill(p, p + capacity, false);
+    }
+
+    MaybeValue get(Key key) {
+        auto i = hashCode(key);
+        for (; getBool(i) != false; i = (i + 1) % capacity) {
+            if (getKey(i) == key) {
+                return std::make_pair(getValue(i), true);
+            }
+        }
+        return std::make_pair(Value(), false);
+    }
+
+    void insert(Key key, Value value) {
+        if (element_count >= capacity / 2) resize(capacity * 2);
+
+        auto i = hashCode(key);
+        for (; getBool(i) != false; i = (i + 1) % capacity) {
+            if (getKey(i) == key) {
+                getValue(i) = value;
+                return;
+            }
+        }
+
+        getKey(i) = key;
+        getValue(i) = value;
+        getBool(i) = true;
+
+        element_count++;
+    }
+
+    void remove(Key key) {
+        if (!contains(key)) return;
+
+        auto i = hashCode(key);
+        for (; getBool(i) != false; i = (i + 1) % capacity) {
+            if (getKey(i) == key) {
+                break;
+            }
+        }
+
+        getBool(i) = false;
+        i = (i + 1) % capacity;
+        while (getBool(i) != false) {
+            auto temp_key = getKey(i);
+            auto temp_value = getValue(i);
+            getBool(i) = false;
+            element_count--;
+            insert(temp_key, temp_value);
+            i = (i + 1) % capacity;
+        }
+
+        element_count--;
+        if (element_count > 0 && element_count <= capacity / 8) resize(capacity / 2);
+    }
+
+    bool contains(Key key) {
+        return get(key).second;
+    }
+
+    size_t size() {
+        return element_count;
+    }
+
+    bool isEmpty() {
+        return size() == 0;
+    }
+
+    typedef std::pair<const Key, Value> value_type;
+
+    class iterator : public std::iterator<std::forward_iterator_tag, value_type> {
+        size_t index;
+        LinearProbingHashSymbolTable& st;
+    public:
+        iterator(size_t _index, LinearProbingHashSymbolTable& _st) : index(_index), st(_st) {
+            while (index < st.capacity && st.getBool(index) == false) {
+                ++index;
+            }
+        }
+
+        void increment() {
+            do {
+                ++index;
+            }
+            while (index < st.capacity && st.getBool(index) == false);
+        }
+
+        iterator& operator++() {
+            increment();
+            return *this;
+        }
+
+        iterator operator++(int) {
+            iterator tmp(*this);
+            increment();
+            return tmp;
+        }
+
+        bool operator==(const iterator &other) const {
+            return index == other.index;
+        }
+
+        bool operator!=(const iterator &other) const {
+            return !((*this) == other);
+        }
+
+        value_type operator*() const {
+            return std::make_pair(st.getKey(index), st.getValue(index));
+        }
+    };
+
+    iterator begin() {
+        if (isEmpty()) return end();
+        return iterator(0, *this);
+    }
+    iterator end() { return iterator(capacity, *this); }
+
+
+protected:
+    void resize(size_t new_capacity) {
+        LinearProbingHashSymbolTable new_st(new_capacity);
+        for (size_t i = 0; i < capacity; ++i) {
+            if (getBool(i) == true) {
+                new_st.insert(getKey(i), getValue(i));
+            }
+        }
+        std::swap(keys, new_st.keys);
+        std::swap(values, new_st.values);
+        std::swap(booleans, new_st.booleans);
+        capacity = new_capacity;
+    }
+
+    size_t hashCode(Key key) {
+        return ((std::hash<Key>()(key) & 0x07ffffffff) % capacity);
+    }
+
+    Key& getKey(size_t index) { return keys.get()[index]; }
+    Value& getValue(size_t index) { return values.get()[index]; }
+    bool& getBool(size_t index) { return booleans.get()[index]; }
+
+private:
+    const static size_t default_capacity = 10;
+    size_t capacity;
+    size_t element_count = 0;
+    KeyArrayP keys = KeyArrayP(new Key[capacity], std::default_delete<Key[]>());
+    ValueArrayP values = ValueArrayP(new Value[capacity], std::default_delete<Value[]>());
+    BoolArrayP booleans = BoolArrayP(new bool[capacity], std::default_delete<bool[]>());
+};
+
+template <typename Key, typename Value>
 void printHashMaybeValue(typename ChainingHashSymbolTable<Key, Value>::MaybeValue maybeValue) {
     if (maybeValue.second) {
         std::cout << maybeValue.first << std::endl;
@@ -264,9 +429,10 @@ void printHashMaybeValue(typename ChainingHashSymbolTable<Key, Value>::MaybeValu
     }
 }
 
-void testHashTable() {
-    std::cout << "Test hash table - separate chaining.\n";
-    ChainingHashSymbolTable<Person, Money> chain_st;
+template <template <class, class> class HashTable>
+void testHashTableImpl(std::string impl_name) {
+    std::cout << "Test hash table - " << impl_name << ".\n";
+    HashTable<Person, Money> chain_st;
     Person person1 = {"John", "Doe"};
     Person person2 = {"Genghis", "Kahn"};
     Person person3 = {"Walder", "Frey"};
@@ -291,7 +457,7 @@ void testHashTable() {
 
     std::cout << "Resizing test.\n";
     std::cout << "Insert 100 ints.\n";
-    ChainingHashSymbolTable<int, int> chain_st2(2);
+    HashTable<int, int> chain_st2(2);
     for (int i = 0; i < 100; i++) {
         chain_st2.insert(i, i);
     }
@@ -299,7 +465,7 @@ void testHashTable() {
         std::cout << (*it).first << " " << (*it).second << std::endl;
     }
 
-    std::cout << "Remove 90 ints.\n";
+    std::cout << "Remove 95 ints.\n";
     for (int i = 0; i < 95; i++) {
         chain_st2.remove(i);
     }
@@ -309,5 +475,10 @@ void testHashTable() {
     }
 
 };
+
+void testHashTable() {
+    testHashTableImpl<ChainingHashSymbolTable>("separate chaining");
+    testHashTableImpl<LinearProbingHashSymbolTable>("linear probing");
+}
 
 #endif //ALGS_HASH_TABLE_H
