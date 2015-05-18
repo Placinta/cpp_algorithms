@@ -136,8 +136,65 @@ public:
     }
 
     bool isEmpty() {
-        return size() != 0;
+        return size() == 0;
     }
+
+    typedef std::pair<const Key, Value> value_type;
+
+    class iterator : public std::iterator<std::forward_iterator_tag, value_type> {
+        int bucket_index;
+        ChainingHashSymbolTable& st;
+        NodeP current_node;
+    public:
+        iterator(int _first_bucket_index, ChainingHashSymbolTable& _st, NodeP _first_node) :
+                bucket_index(_first_bucket_index), st(_st), current_node(_first_node) { if (current_node == nullptr) increment(); }
+
+        void increment() {
+            while (bucket_index < st.bucket_count) {
+                if (current_node != nullptr) {
+                    current_node = current_node->next;
+                }
+                if (current_node == nullptr) {
+                    ++bucket_index;
+                    if (bucket_index < st.bucket_count) {
+                        current_node = st.getBucketNode(bucket_index);
+                        if (current_node != nullptr) break;
+                    }
+                    else break;
+                }
+                else break;
+            }
+        }
+
+        iterator& operator++() {
+            increment();
+            return *this;
+        }
+
+        iterator operator++(int) {
+            iterator tmp(*this);
+            increment();
+            return tmp;
+        }
+
+        bool operator==(const iterator &other) const {
+            return bucket_index == other.bucket_index && ((current_node == nullptr && other.current_node == nullptr) || (current_node == other.current_node));
+        }
+
+        bool operator!=(const iterator &other) const {
+            return !((*this) == other);
+        }
+
+        value_type operator*() const {
+            return std::make_pair(current_node->key, current_node->value);
+        }
+    };
+
+    iterator begin() {
+        if (isEmpty()) return end();
+        return iterator(0, *this, getBucketNode(0));
+    }
+    iterator end() { return iterator(bucket_count, *this, nullptr); }
 
 protected:
     void resize(int new_bucket_count) {
@@ -157,7 +214,7 @@ protected:
 
 private:
     int bucket_count;
-    long element_count;
+    size_t element_count;
     BucketP buckets;
 };
 
@@ -169,7 +226,6 @@ void printHashMaybeValue(typename ChainingHashSymbolTable<Key, Value>::MaybeValu
         std::cout << "Element not found.\n";
     }
 }
-
 
 void testHashTable() {
     std::cout << "Test hash table - separate chaining.\n";
@@ -187,6 +243,11 @@ void testHashTable() {
     std::cout << person1 << " " ; printHashMaybeValue<Person, Money>(maybe_money1);
     std::cout << person2 << " " ; printHashMaybeValue<Person, Money>(maybe_money2);
     std::cout << person3 << " " ; printHashMaybeValue<Person, Money>(maybe_money3);
+
+    std::cout << "Iterator test.\n";
+    for (auto it = chain_st.begin(); it != chain_st.end(); it++) {
+        std::cout << (*it).first << " " << (*it).second << std::endl;
+    }
 };
 
 #endif //ALGS_HASH_TABLE_H
