@@ -128,7 +128,31 @@ public:
             }
         }
         getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)));
+//        getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)), NodeRemoveLog);
         element_count++;
+    }
+
+    void remove(Key key) {
+        if (!contains(key)) return;
+
+        auto bucket = hashBucket(key);
+        for (NodeP& node = getBucketNode(bucket), prev = nullptr; node != nullptr; prev = node, node = node->next) {
+            if (node->key == key) {
+                // Is middle or last element.
+                if (prev != nullptr) {
+                    prev->next = node->next;
+                }
+                else {
+                    // Is first element.
+                    node = nullptr;
+                }
+                break;
+            }
+        }
+    }
+
+    bool contains(Key key) {
+        return get(key).second;
     }
 
     size_t size() {
@@ -212,6 +236,11 @@ protected:
 
     NodeP& getBucketNode(int index) { return buckets.get()[index]; }
 
+    static void NodeRemoveLog (LinkedListNode* removed_node) {
+        std::cout << "Removing node " << *removed_node << std::endl;
+        delete removed_node;
+    }
+
 private:
     int bucket_count;
     size_t element_count;
@@ -243,6 +272,8 @@ void testHashTable() {
     std::cout << person1 << " " ; printHashMaybeValue<Person, Money>(maybe_money1);
     std::cout << person2 << " " ; printHashMaybeValue<Person, Money>(maybe_money2);
     std::cout << person3 << " " ; printHashMaybeValue<Person, Money>(maybe_money3);
+
+    chain_st.remove(person2);
 
     std::cout << "Iterator test.\n";
     for (auto it = chain_st.begin(); it != chain_st.end(); it++) {
