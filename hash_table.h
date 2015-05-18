@@ -109,6 +109,9 @@ public:
     ChainingHashSymbolTable() : bucket_count(97), element_count(0), buckets(BucketP(new NodeP[bucket_count], std::default_delete<NodeP[]>())) {
     }
 
+    ChainingHashSymbolTable(int _bucket_count) : bucket_count(_bucket_count), element_count(0), buckets(BucketP(new NodeP[bucket_count], std::default_delete<NodeP[]>())) {
+    }
+
     MaybeValue get(Key key) {
         auto bucket = hashBucket(key);
         for (NodeP node = getBucketNode(bucket); node != nullptr; node = node->next) {
@@ -120,6 +123,7 @@ public:
     }
 
     void insert(Key key, Value value) {
+        if (element_count >= bucket_count) resize(bucket_count * 2);
         auto bucket = hashBucket(key);
         for (NodeP node = getBucketNode(bucket); node != nullptr; node = node->next) {
             if (node->key == key) {
@@ -127,14 +131,13 @@ public:
                 return;
             }
         }
-        getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)));
-//        getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)), NodeRemoveLog);
+//        getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)));
+        getBucketNode(bucket) = NodeP(new LinkedListNode(key, value, getBucketNode(bucket)), NodeRemoveLog);
         element_count++;
     }
 
     void remove(Key key) {
         if (!contains(key)) return;
-
         auto bucket = hashBucket(key);
         for (NodeP& node = getBucketNode(bucket), prev = nullptr; node != nullptr; prev = node, node = node->next) {
             if (node->key == key) {
@@ -149,6 +152,9 @@ public:
                 break;
             }
         }
+        element_count--;
+
+        if (element_count > 0 && element_count <= bucket_count / 8) resize(bucket_count / 2);
     }
 
     bool contains(Key key) {
@@ -222,11 +228,13 @@ public:
 
 protected:
     void resize(int new_bucket_count) {
-        BucketP new_buckets(new NodeP[new_bucket_count], std::default_delete<NodeP[]>());
-        for (long i = 0; i < bucket_count; i++) {
-            new_buckets.get()[i] = buckets.get()[i];
+        ChainingHashSymbolTable new_st(new_bucket_count);
+        for (int i = 0; i < bucket_count; i++) {
+            for (NodeP node = getBucketNode(i); node != nullptr; node = node->next) {
+                new_st.insert(node->key, node->value);
+            }
         }
-        std::swap(buckets, new_buckets);
+        std::swap(buckets, new_st.buckets);
         bucket_count = new_bucket_count;
     }
 
@@ -279,6 +287,27 @@ void testHashTable() {
     for (auto it = chain_st.begin(); it != chain_st.end(); it++) {
         std::cout << (*it).first << " " << (*it).second << std::endl;
     }
+
+
+    std::cout << "Resizing test.\n";
+    std::cout << "Insert 100 ints.\n";
+    ChainingHashSymbolTable<int, int> chain_st2(2);
+    for (int i = 0; i < 100; i++) {
+        chain_st2.insert(i, i);
+    }
+    for (auto it = chain_st2.begin(), end = chain_st2.end(); it != end; it++) {
+        std::cout << (*it).first << " " << (*it).second << std::endl;
+    }
+
+    std::cout << "Remove 90 ints.\n";
+    for (int i = 0; i < 95; i++) {
+        chain_st2.remove(i);
+    }
+
+    for (auto it = chain_st2.begin(), end = chain_st2.end(); it != end; it++) {
+        std::cout << (*it).first << " " << (*it).second << std::endl;
+    }
+
 };
 
 #endif //ALGS_HASH_TABLE_H
