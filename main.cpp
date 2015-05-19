@@ -9,6 +9,7 @@
 #include "llrb.h"
 #include "hash_table.h"
 #include "threads.h"
+#include "applications/percolation.h"
 
 int main() {
     testUF();
@@ -23,5 +24,6 @@ int main() {
     testLLRB();
     testHashTable();
     testThreads();
+    PercolationStats(50, 100);
     return 0;
 }
