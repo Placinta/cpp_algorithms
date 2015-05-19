@@ -10,6 +10,7 @@
 #include "hash_table.h"
 #include "threads.h"
 #include "applications/percolation.h"
+#include "simple_deque.h"
 
 int main() {
     testUF();
@@ -25,5 +26,6 @@ int main() {
     testHashTable();
     testThreads();
     PercolationStats(50, 100);
+    testDeque();
     return 0;
 }

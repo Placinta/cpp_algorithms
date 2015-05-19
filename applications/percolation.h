@@ -145,6 +145,7 @@ public:
      * t - number of independent experiments.
      */
     PercolationStats(size_t n, size_t t) : results(t, 0) {
+        std::cout << "Compute percolation.\n";
         for (size_t i = 0; i < t; i++) {
             Percolation p(n);
             simulate(p, i);

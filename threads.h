@@ -8,6 +8,8 @@
 #include <thread>
 
 void testThreads() {
+    std::cout << "Test mutexes.\n";
+
     std::mutex a;
     std::thread t1([&a](){
         for (int i = 0; i < 2; i++) {
