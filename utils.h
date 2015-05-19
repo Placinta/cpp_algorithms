@@ -56,4 +56,15 @@ RandomIt binary_search_in_range(RandomIt first, RandomIt last, typename RandomIt
     return last;
 }
 
+void print_numeric_type_sizes() {
+    std::cout << "char size " << sizeof(char) << std::endl;
+    std::cout << "short size " << sizeof(short) << std::endl;
+    std::cout << "Int size " << sizeof(int) << std::endl;
+    std::cout << "Long size " << sizeof(long) << std::endl;
+    std::cout << "Long long " << sizeof(long long) << std::endl;
+    std::cout << "float size " << sizeof(float) << std::endl;
+    std::cout << "double size " << sizeof(double) << std::endl;
+    std::cout << "size_t size " << sizeof(size_t) << std::endl;
+}
+
 #endif //ALGS_UTILS_H
