@@ -11,6 +11,7 @@
 #include "threads.h"
 #include "applications/percolation.h"
 #include "simple_deque.h"
+#include "random_queue.h"
 
 int main() {
     testUF();
@@ -27,5 +28,6 @@ int main() {
     testThreads();
     PercolationStats(50, 100);
     testDeque();
+    testRandomQueue();
     return 0;
 }

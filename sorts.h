@@ -20,7 +20,7 @@ void knuth_shuffle(RandomIt first, RandomIt last) {
 
     RandomIt i;
     int index = 0, r = 0;
-    for (i = first; i != last; i++, index++) {
+    for (i = first; i != last; ++i, ++index) {
         r = std::uniform_int_distribution<>{0, index}(gen);
         std::swap(*i, *(first + r));
     };
