@@ -1,0 +1,268 @@
+//
+// Created by Placinta on 5/21/15.
+//
+
+#ifndef ALGS_GRAPH_H
+#define ALGS_GRAPH_H
+
+#include <string>
+#include <vector>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <stack>
+#include <queue>
+
+class Graph {
+public:
+    class iterator;
+    typedef std::vector<int> vertexEdgeList;
+    typedef vertexEdgeList::const_iterator vertexEdgeListIterator;
+    typedef std::pair<vertexEdgeListIterator, vertexEdgeListIterator> Range;
+    Graph(int v) : vertex_count(v) {
+        for (int i = 0; i < vertex_count; i++) {
+            adjacency_list.push_back(vertexEdgeList());
+        }
+    }
+
+    Graph(std::string file_name) {
+        std::fstream f(file_name, std::fstream::in);
+        if ( (f.rdstate() & std::ifstream::failbit ) != 0 ) {
+            std::cerr << "Error opening file.\n";
+            return;
+        }
+
+        f >> vertex_count;
+
+        for (int i = 0; i < vertex_count; i++) {
+            adjacency_list.push_back(vertexEdgeList());
+        }
+
+        while (!f.eof()) {
+            int i, j;
+            f >> i >> j;
+            addEdge(i, j);
+        }
+    }
+
+    void addEdge(int v, int w) {
+        adjacency_list[v].push_back(w);
+        adjacency_list[w].push_back(v);
+        ++edge_count;
+        ++edge_count;
+    }
+
+    Range adjacent(int v) const {
+        auto& vertex_edges = adjacency_list[v];
+        return std::make_pair(vertex_edges.begin(), vertex_edges.end());
+    }
+
+    vertexEdgeList& adjacentAsVector(int v) { return adjacency_list[v]; }
+    int vertexCount() const { return vertex_count; }
+    int edgeCount() const { return edge_count; }
+
+    std::string toString() const {
+        std::stringstream ss;
+        for (int i = 0; i < vertexCount(); ++i) {
+            for (auto range = adjacent(i); range.first != range.second; ++range.first) {
+                ss << "(" << i << ", " << *range.first << ") ";
+            }
+        }
+
+        return ss.str();
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Graph& g) {
+        os << g.toString();
+        return os;
+    }
+
+    static int degree(Graph g, int v) {
+        int degree = 0;
+        auto range = g.adjacent(v);
+        for (auto it = range.first; it != range.second; it++) ++degree;
+        return degree;
+    }
+
+    static int maxDegree(Graph g) {
+        int max = 0;
+        for (int i = 0; i < g.vertexCount(); i++) {
+            auto vertex_degree = Graph::degree(g, i);
+            if (vertex_degree > max) max = vertex_degree;
+        }
+        return max;
+    }
+
+    static double averageDegree(Graph g) {
+        return 2.0f * g.edgeCount() / g.vertexCount();
+    }
+
+    static int numberOfSelfLoops(Graph g) {
+        int count = 0;
+        for (int v = 0; v < g.vertexCount(); v++) {
+            auto range = g.adjacent(v);
+            for (auto it = range.first; it != range.second; it++) {
+                if (v == *it) {
+                    ++count;
+                }
+            }
+        }
+        return count / 2;
+    }
+
+private:
+    int vertex_count = 0;
+    int edge_count = 0;
+    std::vector<vertexEdgeList> adjacency_list;
+};
+
+class GraphPaths {
+public:
+    typedef std::vector<int> Path;
+    typedef std::vector<int> VertexVector;
+    typedef std::deque<bool> BoolVector;
+    GraphPaths(Graph _g, int _source) :
+            g(_g), marked(BoolVector((unsigned long) g.vertexCount(), false)), edgeTo(VertexVector((unsigned long) g.vertexCount(), -1)), source(_source) {
+
+        std::stack<int> frontier;
+        frontier.push(_source);
+
+        while (!frontier.empty()) {
+            auto v = frontier.top();
+            frontier.pop();
+            marked[v] = true;
+            for (auto range = g.adjacent(v); range.first != range.second; ++range.first) {
+                auto adjacent_vertex = *(range.first);
+                if (!marked[adjacent_vertex]) {
+                    frontier.push(adjacent_vertex);
+                    edgeTo[adjacent_vertex] = v;
+                }
+            }
+        }
+    }
+
+    bool hasPathTo(int v) {
+        return marked[v];
+    }
+
+    Path pathTo(int v) {
+        Path p;
+        p.push_back(v);
+        while (v != source) {
+            auto parent = edgeTo[v];
+            p.push_back(parent);
+            v = parent;
+        }
+        std::reverse(p.begin(), p.end());
+
+        return p;
+    }
+
+    std::string pathToAsString(int v) {
+        auto p = pathTo(v);
+        std::stringstream ss;
+        std::copy(p.begin(), p.end(), std::ostream_iterator<int>(ss, " "));
+        return ss.str();
+    }
+private:
+    Graph g;
+    int source;
+    BoolVector marked;
+    VertexVector edgeTo;
+};
+
+class GraphBreadthFirstPaths {
+public:
+    typedef std::vector<int> Path;
+    typedef std::vector<int> VertexVector;
+    typedef std::vector<int> DistanceVector;
+    typedef std::deque<bool> BoolVector;
+    GraphBreadthFirstPaths(Graph _g, int _source) :
+            g(_g),
+            marked(BoolVector((unsigned long) g.vertexCount(), false)),
+            edgeTo(VertexVector((unsigned long) g.vertexCount(), -1)),
+            distTo(DistanceVector((unsigned long) g.vertexCount(), 0)),
+            source(_source) {
+
+        std::queue<int> frontier;
+        frontier.push(_source);
+
+        while (!frontier.empty()) {
+            auto v = frontier.front();
+            frontier.pop();
+            marked[v] = true;
+            for (auto range = g.adjacent(v); range.first != range.second; ++range.first) {
+                auto adjacent_vertex = *(range.first);
+                if (adjacent_vertex == 2) {
+                    int c= 3;
+                }
+                if (!marked[adjacent_vertex]) {
+                    frontier.push(adjacent_vertex);
+                    edgeTo[adjacent_vertex] = v;
+                    marked[adjacent_vertex] = true;
+                    ++distTo[adjacent_vertex];
+                }
+            }
+        }
+    }
+
+    bool hasPathTo(int v) {
+        return marked[v];
+    }
+
+    Path pathTo(int v) {
+        Path p;
+        p.push_back(v);
+        while (v != source) {
+            auto parent = edgeTo[v];
+            p.push_back(parent);
+            v = parent;
+        }
+        std::reverse(p.begin(), p.end());
+
+        return p;
+    }
+
+    std::string pathToAsString(int v) {
+        auto p = pathTo(v);
+        std::stringstream ss;
+        std::copy(p.begin(), p.end(), std::ostream_iterator<int>(ss, " "));
+        return ss.str();
+    }
+private:
+    Graph g;
+    int source;
+    BoolVector marked;
+    VertexVector edgeTo;
+    DistanceVector distTo;
+};
+
+void testGraph() {
+    Graph g("data/tinyGraph.txt");
+    std::cout << g << "\n";
+    std::cout << "Number of self loops: " << Graph::numberOfSelfLoops(g) << "\n";
+    std::cout << "Average degree: " << Graph::averageDegree(g) << "\n";
+    std::cout << "Max degree: " << Graph::maxDegree(g) << "\n";
+
+    std::cout << "Depth first search from vertex 0.\n";
+    GraphPaths dfs(g, 0);
+    for (int i = 0; i < g.vertexCount(); i++) {
+        if (dfs.hasPathTo(i)) {
+            std::cout << dfs.pathToAsString(i) << "\n";
+        } else {
+            std::cout << "No path to vertex " << i << ".\n";
+        }
+    }
+
+    std::cout << "Breadth first search from vertex 0.\n";
+    GraphBreadthFirstPaths bfs(g, 0);
+    for (int i = 0; i < g.vertexCount(); i++) {
+        if (bfs.hasPathTo(i)) {
+            std::cout << bfs.pathToAsString(i) << "\n";
+        } else {
+            std::cout << "No path to vertex " << i << ".\n";
+        }
+    }
+}
+
+#endif //ALGS_GRAPH_H

@@ -12,6 +12,7 @@
 #include "applications/percolation.h"
 #include "simple_deque.h"
 #include "random_queue.h"
+#include "graph.h"
 
 int main() {
     testUF();
@@ -29,5 +30,6 @@ int main() {
     PercolationStats(50, 100);
     testDeque();
     testRandomQueue();
+    testGraph();
     return 0;
 }
