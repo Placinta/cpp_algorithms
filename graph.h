@@ -286,6 +286,111 @@ private:
     VertexVector components;
 };
 
+class GraphCycle {
+public:
+    typedef std::vector<int> VertexVector;
+    typedef std::deque<bool> BoolVector;
+
+    GraphCycle(Graph _g) :
+            g(_g),
+            marked(BoolVector((unsigned long) g.vertexCount(), false)),
+            edgeTo(VertexVector((unsigned long) g.vertexCount(), -1)) {
+        if (hasSelfLoop()) return;
+        if (hasParallelEdges()) return;
+
+        for (int i = 0; i < g.vertexCount() && hasCycle() == false; ++i) {
+            if (!marked[i]) {
+                dfs(i);
+            }
+        }
+    }
+
+    bool hasCycle() { return has_cycle; }
+    VertexVector cycle() { return cycle_vertices; }
+
+    std::string cycleAsString() {
+        auto p = cycle();
+        std::stringstream ss;
+        std::copy(p.begin(), p.end(), std::ostream_iterator<int>(ss, " "));
+        return ss.str();
+    }
+
+protected:
+    bool hasSelfLoop() {
+        for (int i = 0; i < g.vertexCount(); ++i) {
+            for (auto range = g.adjacent(i); range.first != range.second; ++range.first) {
+                auto adjacent_vertex = *(range.first);
+                if (adjacent_vertex == i) {
+                    cycle_vertices.push_back(i);
+                    cycle_vertices.push_back(i);
+                    has_cycle = true;
+                    return has_cycle;
+                }
+            }
+        }
+        return false;
+    }
+
+    bool hasParallelEdges() {
+        for (int i = 0; i < g.vertexCount(); ++i) {
+            for (auto range = g.adjacent(i); range.first != range.second; ++range.first) {
+                auto adjacent_vertex = *(range.first);
+                if (marked[adjacent_vertex]) {
+                    cycle_vertices.push_back(i);
+                    cycle_vertices.push_back(adjacent_vertex);
+                    cycle_vertices.push_back(i);
+                    has_cycle = true;
+                    return has_cycle;
+                }
+                marked[adjacent_vertex] = true;
+            }
+
+            for (auto range = g.adjacent(i); range.first != range.second; ++range.first) {
+                marked[*(range.first)] = false;
+            }
+        }
+
+        return false;
+    }
+
+    void dfs(int source) {
+        typedef struct {
+            int v;
+            int prev;
+        } VertexPair;
+        std::stack<VertexPair> frontier;
+        frontier.push({source, -1});
+
+        while (!frontier.empty()) {
+            auto pair = frontier.top();
+            frontier.pop();
+            marked[pair.v] = true;
+            for (auto range = g.adjacent(pair.v); range.first != range.second; ++range.first) {
+                auto adjacent_vertex = *(range.first);
+                if (!marked[adjacent_vertex]) {
+                    frontier.push({adjacent_vertex, pair.v});
+                    edgeTo[adjacent_vertex] = pair.v;
+                }
+                else if (adjacent_vertex != pair.prev) {
+                    for (auto i = pair.v; i != adjacent_vertex; i = edgeTo[i]) {
+                        cycle_vertices.push_back(i);
+                    }
+                    cycle_vertices.push_back(adjacent_vertex);
+                    cycle_vertices.push_back(pair.v);
+                    has_cycle = true;
+                    break;
+                }
+            }
+        }
+    }
+private:
+    Graph g;
+    BoolVector marked;
+    VertexVector cycle_vertices;
+    VertexVector edgeTo;
+    bool has_cycle = false;
+};
+
 void testGraph() {
     Graph g("data/tinyGraph.txt");
     std::cout << g << "\n";
@@ -320,6 +425,13 @@ void testGraph() {
     std::cout << "Connected component count: " << cc.count() << "\n";
     std::cout << "2 connected to 4: " << cc.connected(2, 4) << "\n";
     std::cout << "4 connected to 5: " << cc.connected(4, 5) << "\n";
+
+
+    GraphCycle gc(g);
+    std::cout << "Graph has a cycle: " << gc.hasCycle() << "\n";
+    if (gc.hasCycle()) {
+        std::cout << gc.cycleAsString() << "\n";
+    }
 }
 
 #endif //ALGS_GRAPH_H
