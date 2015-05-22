@@ -237,6 +237,55 @@ private:
     DistanceVector distTo;
 };
 
+class GraphConnectedComponents {
+public:
+    typedef std::vector<int> VertexVector;
+    typedef std::deque<bool> BoolVector;
+
+    GraphConnectedComponents(Graph _g) :
+            g(_g),
+            marked(BoolVector((unsigned long) g.vertexCount(), false)),
+            components(VertexVector((unsigned long) g.vertexCount(), 0)) {
+        for (int i = 0; i < g.vertexCount(); ++i) {
+            components[i] = i;
+        }
+
+        for (int i = 0; i < g.vertexCount(); ++i) {
+            if (!marked[i]) {
+                dfs(i);
+                ++component_count;
+            }
+        }
+    }
+    bool connected(int v, int w) { return components[v] == components[w]; }
+    int count() { return component_count; }
+    int id(int v) { return components[v]; }
+
+protected:
+    void dfs(int source) {
+        std::stack<int> frontier;
+        frontier.push(source);
+
+        while (!frontier.empty()) {
+            auto v = frontier.top();
+            frontier.pop();
+            marked[v] = true;
+            for (auto range = g.adjacent(v); range.first != range.second; ++range.first) {
+                auto adjacent_vertex = *(range.first);
+                if (!marked[adjacent_vertex]) {
+                    frontier.push(adjacent_vertex);
+                    components[adjacent_vertex] = source;
+                }
+            }
+        }
+    }
+private:
+    Graph g;
+    int component_count = 0;
+    BoolVector marked;
+    VertexVector components;
+};
+
 void testGraph() {
     Graph g("data/tinyGraph.txt");
     std::cout << g << "\n";
@@ -263,6 +312,14 @@ void testGraph() {
             std::cout << "No path to vertex " << i << ".\n";
         }
     }
+
+    GraphConnectedComponents cc(g);
+    for (int i = 0; i < g.vertexCount(); i++) {
+        std::cout << "Vertex " << i << " connected component: " << cc.id(i) << "\n";
+    }
+    std::cout << "Connected component count: " << cc.count() << "\n";
+    std::cout << "2 connected to 4: " << cc.connected(2, 4) << "\n";
+    std::cout << "4 connected to 5: " << cc.connected(4, 5) << "\n";
 }
 
 #endif //ALGS_GRAPH_H
