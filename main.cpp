@@ -13,6 +13,7 @@
 #include "simple_deque.h"
 #include "random_queue.h"
 #include "graph.h"
+#include "digraph.h"
 
 int main() {
     testUF();
@@ -31,5 +32,6 @@ int main() {
     testDeque();
     testRandomQueue();
     testGraph();
+    testDiGraph();
     return 0;
 }

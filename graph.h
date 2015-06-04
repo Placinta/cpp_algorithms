@@ -15,7 +15,6 @@
 
 class Graph {
 public:
-    class iterator;
     typedef std::vector<int> vertexEdgeList;
     typedef vertexEdgeList::const_iterator vertexEdgeListIterator;
     typedef std::pair<vertexEdgeListIterator, vertexEdgeListIterator> Range;
@@ -27,7 +26,7 @@ public:
 
     Graph(std::string file_name) {
         std::fstream f(file_name, std::fstream::in);
-        if ( (f.rdstate() & std::ifstream::failbit ) != 0 ) {
+        if (!f) {
             std::cerr << "Error opening file.\n";
             return;
         }
@@ -38,9 +37,8 @@ public:
             adjacency_list.push_back(vertexEdgeList());
         }
 
-        while (!f.eof()) {
-            int i, j;
-            f >> i >> j;
+        int i, j;
+        while (f >> i >> j) {
             addEdge(i, j);
         }
     }
