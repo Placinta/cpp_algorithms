@@ -360,15 +360,17 @@ class DigraphTopologicalOrder {
     using VertexID = int;
     using EdgeList = std::vector<VertexID>;
 public:
-    DigraphTopologicalOrder(Digraph& _g) : g(_g), marked((u_long) g.vertexCount(), false) {
-        DigraphCycle cycle_detector(g);
-        if (!cycle_detector.hasCycle()) {
-            computeDAGorder();
-            has_order = true;
+    DigraphTopologicalOrder(Digraph& _g, bool check_cycle_detection = true) : g(_g), marked((u_long) g.vertexCount(), false) {
+        if (check_cycle_detection) {
+            DigraphCycle cycle_detector(g);
+            if (cycle_detector.hasCycle()) {
+                cycle = cycle_detector.cycleAsString();
+                return;
+            }
         }
-        else {
-            cycle = cycle_detector.cycleAsString();
-        }
+
+        computeDAGorder();
+        has_order = true;
     }
 
 protected:
@@ -453,6 +455,63 @@ private:
     std::string cycle;
 };
 
+/**
+ * Strongly connected components for a digraph.
+ *
+ * Based on Kosaraju-Sharir algorithm (2-pass DFS).
+ */
+class DigraphStronglyConnectedComponents {
+public:
+    using VertexVector = std::vector<int>;
+    using BoolVector = std::deque<bool>;
+
+    DigraphStronglyConnectedComponents(Digraph _g) :
+            g(_g),
+            marked(BoolVector((u_long) g.vertexCount(), false)),
+            components(VertexVector((u_long) g.vertexCount(), 0)) {
+        for (int i = 0; i < g.vertexCount(); ++i) {
+            components[i] = i;
+        }
+
+        auto reversed_graph = g.reverse();
+        auto reverse_post_order = DigraphTopologicalOrder(reversed_graph, false).topologicalOrder();
+
+        for (auto i: reverse_post_order) {
+            if (!marked[i]) {
+                dfs(i);
+                ++component_count;
+            }
+        }
+    }
+    bool connected(int v, int w) { return components[v] == components[w]; }
+    int count() { return component_count; }
+    int id(int v) { return components[v]; }
+
+protected:
+    void dfs(int source) {
+        std::stack<int> frontier;
+        frontier.push(source);
+
+        while (!frontier.empty()) {
+            auto v = frontier.top();
+            frontier.pop();
+            marked[v] = true;
+            for (auto range = g.adjacent(v); range.first != range.second; ++range.first) {
+                auto adjacent_vertex = *(range.first);
+                if (!marked[adjacent_vertex]) {
+                    frontier.push(adjacent_vertex);
+                    components[adjacent_vertex] = source;
+                }
+            }
+        }
+    }
+private:
+    Digraph g;
+    int component_count = 0;
+    BoolVector marked;
+    VertexVector components;
+};
+
 void testDiGraph() {
     Digraph g("data/tinyGraph.txt");
     std::cout << "Directed graph.\n";
@@ -504,6 +563,14 @@ void testDiGraph() {
     } else {
         std::cout << "There is no topological order, there is a cycle present in the graph: " << top.cycleAsString() << ".\n";
     }
+
+    DigraphStronglyConnectedComponents scc(g);
+    for (int i = 0; i < g.vertexCount(); i++) {
+        std::cout << "Vertex " << i << " strongly connected component: " << scc.id(i) << "\n";
+    }
+    std::cout << "Strongly connected component count: " << scc.count() << "\n";
+    std::cout << "2 connected to 4: " << scc.connected(2, 4) << "\n";
+    std::cout << "4 connected to 5: " << scc.connected(4, 5) << "\n";
 }
 
 #endif //ALGS_DIGRAPH_H
