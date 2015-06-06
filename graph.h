@@ -120,7 +120,7 @@ public:
     typedef std::vector<int> VertexVector;
     typedef std::deque<bool> BoolVector;
     GraphPaths(Graph _g, int _source) :
-            g(_g), marked(BoolVector((unsigned long) g.vertexCount(), false)), edgeTo(VertexVector((unsigned long) g.vertexCount(), -1)), source(_source) {
+            g(_g), marked(BoolVector((unsigned long) g.vertexCount(), false)), edge_to(VertexVector((unsigned long) g.vertexCount(), -1)), source(_source) {
 
         std::stack<int> frontier;
         frontier.push(_source);
@@ -133,7 +133,7 @@ public:
                 auto adjacent_vertex = *(range.first);
                 if (!marked[adjacent_vertex]) {
                     frontier.push(adjacent_vertex);
-                    edgeTo[adjacent_vertex] = v;
+                    edge_to[adjacent_vertex] = v;
                 }
             }
         }
@@ -147,7 +147,7 @@ public:
         Path p;
         p.push_back(v);
         while (v != source) {
-            auto parent = edgeTo[v];
+            auto parent = edge_to[v];
             p.push_back(parent);
             v = parent;
         }
@@ -166,7 +166,7 @@ private:
     Graph g;
     int source;
     BoolVector marked;
-    VertexVector edgeTo;
+    VertexVector edge_to;
 };
 
 class GraphBreadthFirstPaths {
@@ -178,8 +178,8 @@ public:
     GraphBreadthFirstPaths(Graph _g, int _source) :
             g(_g),
             marked(BoolVector((unsigned long) g.vertexCount(), false)),
-            edgeTo(VertexVector((unsigned long) g.vertexCount(), -1)),
-            distTo(DistanceVector((unsigned long) g.vertexCount(), 0)),
+            edge_to(VertexVector((unsigned long) g.vertexCount(), -1)),
+            dist_to(DistanceVector((unsigned long) g.vertexCount(), 0)),
             source(_source) {
 
         std::queue<int> frontier;
@@ -193,9 +193,9 @@ public:
                 auto adjacent_vertex = *(range.first);
                 if (!marked[adjacent_vertex]) {
                     frontier.push(adjacent_vertex);
-                    edgeTo[adjacent_vertex] = v;
+                    edge_to[adjacent_vertex] = v;
                     marked[adjacent_vertex] = true;
-                    ++distTo[adjacent_vertex];
+                    ++dist_to[adjacent_vertex];
                 }
             }
         }
@@ -209,7 +209,7 @@ public:
         Path p;
         p.push_back(v);
         while (v != source) {
-            auto parent = edgeTo[v];
+            auto parent = edge_to[v];
             p.push_back(parent);
             v = parent;
         }
@@ -228,8 +228,8 @@ private:
     Graph g;
     int source;
     BoolVector marked;
-    VertexVector edgeTo;
-    DistanceVector distTo;
+    VertexVector edge_to;
+    DistanceVector dist_to;
 };
 
 class GraphConnectedComponents {
@@ -289,7 +289,7 @@ public:
     GraphCycle(Graph _g) :
             g(_g),
             marked(BoolVector((unsigned long) g.vertexCount(), false)),
-            edgeTo(VertexVector((unsigned long) g.vertexCount(), -1)) {
+            edge_to(VertexVector((unsigned long) g.vertexCount(), -1)) {
         if (hasSelfLoop()) return;
         if (hasParallelEdges()) return;
 
@@ -364,10 +364,10 @@ protected:
                 auto adjacent_vertex = *(range.first);
                 if (!marked[adjacent_vertex]) {
                     frontier.push({adjacent_vertex, pair.v});
-                    edgeTo[adjacent_vertex] = pair.v;
+                    edge_to[adjacent_vertex] = pair.v;
                 }
                 else if (adjacent_vertex != pair.prev) {
-                    for (auto i = pair.v; i != adjacent_vertex; i = edgeTo[i]) {
+                    for (auto i = pair.v; i != adjacent_vertex; i = edge_to[i]) {
                         cycle_vertices.push_back(i);
                     }
                     cycle_vertices.push_back(adjacent_vertex);
@@ -382,7 +382,7 @@ private:
     Graph g;
     BoolVector marked;
     VertexVector cycle_vertices;
-    VertexVector edgeTo;
+    VertexVector edge_to;
     bool has_cycle = false;
 };
 
