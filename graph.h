@@ -191,9 +191,6 @@ public:
             marked[v] = true;
             for (auto range = g.adjacent(v); range.first != range.second; ++range.first) {
                 auto adjacent_vertex = *(range.first);
-                if (adjacent_vertex == 2) {
-                    int c= 3;
-                }
                 if (!marked[adjacent_vertex]) {
                     frontier.push(adjacent_vertex);
                     edgeTo[adjacent_vertex] = v;

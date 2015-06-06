@@ -142,6 +142,121 @@ private:
     int edge_count = 0;
 };
 
+class DigraphDFS {
+    using BoolVector = std::deque<bool>;
+    using VertexID = int;
+    using EdgeList = std::vector<VertexID>;
+public:
+    DigraphDFS(Digraph& _g, int _source) :
+            g(_g), source(_source), marked((u_long) g.vertexCount(), false), edge_to((u_long) g.vertexCount(), -1) {
+        std::stack<VertexID> frontier;
+        frontier.push(source);
+
+        while (!frontier.empty()) {
+            auto v = frontier.top();
+            frontier.pop();
+            marked[v] = true;
+
+            for (auto range = g.adjacent(v); range.first != range.second; ++range.first) {
+                auto neighbor_vertex = *(range.first);
+                if (!marked[neighbor_vertex]) {
+                    frontier.push(neighbor_vertex);
+                    edge_to[neighbor_vertex] = v;
+                }
+            }
+        }
+    }
+
+    bool hasPathTo(int w) {
+        return marked[w];
+    }
+
+    EdgeList pathTo(int w) {
+        EdgeList path;
+        if (!hasPathTo(w)) return path;
+
+        while (w != -1) {
+            path.push_back(w);
+            w = edge_to[w];
+        }
+
+        std::reverse(path.begin(), path.end());
+        return path;
+    }
+
+    std::string pathToAsString(int w) {
+        auto path = pathTo(w);
+        std::stringstream ss;
+        std::copy(path.begin(), path.end(), std::ostream_iterator<int>(ss, " "));
+        return ss.str();
+    }
+
+private:
+    Digraph g;
+    int source;
+    BoolVector marked;
+    EdgeList edge_to;
+};
+
+class DigraphBFS {
+    using BoolVector = std::deque<bool>;
+    using VertexID = int;
+    using EdgeList = std::vector<VertexID>;
+public:
+    DigraphBFS(Digraph& _g, int source) : DigraphBFS(_g, std::vector<int>{source}) {}
+
+    DigraphBFS(Digraph& _g, const std::vector<int>& multiple_sources) :
+            g(_g), marked((u_long) g.vertexCount(), false), edge_to((u_long) g.vertexCount(), -1) {
+        std::queue<int> frontier;
+        for (auto& elem: multiple_sources) {
+            marked[elem] = true;
+            frontier.push(std::move(elem));
+        }
+
+        while (!frontier.empty()) {
+            auto v = frontier.front();
+            frontier.pop();
+
+            for (auto range = g.adjacent(v); range.first != range.second; ++range.first) {
+                auto adjacent_vertex = *(range.first);
+                if (!marked[adjacent_vertex]) {
+                    frontier.push(adjacent_vertex);
+                    marked[adjacent_vertex] = true;
+                    edge_to[adjacent_vertex] = v;
+                }
+            }
+        }
+    }
+
+    bool hasPathTo(int w) {
+        return marked[w];
+    }
+
+    EdgeList pathTo(int w) {
+        EdgeList path;
+        if (!hasPathTo(w)) return path;
+
+        while (w != -1) {
+            path.push_back(w);
+            w = edge_to[w];
+        }
+
+        std::reverse(path.begin(), path.end());
+        return path;
+    }
+
+    std::string pathToAsString(int w) {
+        auto path = pathTo(w);
+        std::stringstream ss;
+        std::copy(path.begin(), path.end(), std::ostream_iterator<int>(ss, " "));
+        return ss.str();
+    }
+private:
+    Digraph g;
+    BoolVector marked;
+    EdgeList edge_to;
+};
+
 void testDiGraph() {
     Digraph g("data/tinyGraph.txt");
     std::cout << "Directed graph.\n";
@@ -155,6 +270,36 @@ void testDiGraph() {
     auto reversed = g.reverse();
     std::cout << "Reversed graph.\n";
     std::cout << reversed << "\n";
+
+    std::cout << "Depth first search from vertex 1.\n";
+    DigraphDFS g_dfs(g, 1);
+    for (int i = 0; i < g.vertexCount(); i++) {
+        if (g_dfs.hasPathTo(i)) {
+            std::cout << g_dfs.pathToAsString(i) << "\n";
+        } else {
+            std::cout << "No path to vertex " << i << ".\n";
+        }
+    }
+
+    std::cout << "Breadth first search from vertex 1.\n";
+    DigraphBFS bfs(g, 1);
+    for (int i = 0; i < g.vertexCount(); i++) {
+        if (bfs.hasPathTo(i)) {
+            std::cout << bfs.pathToAsString(i) << "\n";
+        } else {
+            std::cout << "No path to vertex " << i << ".\n";
+        }
+    }
+
+    std::cout << "Breadth first search from multi-source vertices 0, 1, 2.\n";
+    DigraphBFS bfs_multi_source(g, {0, 1, 2});
+    for (int i = 0; i < g.vertexCount(); i++) {
+        if (bfs_multi_source.hasPathTo(i)) {
+            std::cout << bfs_multi_source.pathToAsString(i) << "\n";
+        } else {
+            std::cout << "No path to vertex " << i << ".\n";
+        }
+    }
 }
 
 #endif //ALGS_DIGRAPH_H
