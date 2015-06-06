@@ -293,7 +293,7 @@ public:
         if (hasSelfLoop()) return;
         if (hasParallelEdges()) return;
 
-        for (int i = 0; i < g.vertexCount() && hasCycle() == false; ++i) {
+        for (int i = 0; i < g.vertexCount() && !hasCycle(); ++i) {
             if (!marked[i]) {
                 dfs(i);
             }
@@ -356,7 +356,7 @@ protected:
         std::stack<VertexPair> frontier;
         frontier.push({source, -1});
 
-        while (!frontier.empty()) {
+        while (!frontier.empty() && !hasCycle()) {
             auto pair = frontier.top();
             frontier.pop();
             marked[pair.v] = true;

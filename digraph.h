@@ -23,7 +23,9 @@ class Digraph {
     using VertexID = int;
     using VertexEdgeList = std::vector<VertexID>;
     using VertexEdgeListIterator = VertexEdgeList::const_iterator;
+public:
     using Range = std::pair<VertexEdgeListIterator, VertexEdgeListIterator>;
+private:
     using GraphAdjacencyList = std::vector<VertexEdgeList>;
     using GraphAdjacencyListIterator = GraphAdjacencyList::const_iterator;
     using VertexEdgeListAndIndexTuple = boost::tuple<
@@ -257,6 +259,200 @@ private:
     EdgeList edge_to;
 };
 
+class DigraphCycle {
+public:
+    using VertexID = int;
+    using EdgeList = std::vector<VertexID>;
+    using BoolVector = std::deque<bool>;
+
+    DigraphCycle(Digraph _g) :
+            g(_g),
+            marked(BoolVector((u_long) g.vertexCount(), false)),
+            on_current_path(BoolVector((u_long) g.vertexCount(), false)),
+            edge_to(EdgeList((u_long) g.vertexCount(), -1)) {
+
+        for (int i = 0; i < g.vertexCount() && !hasCycle(); ++i) {
+            if (!marked[i]) {
+                dfs(i);
+            }
+        }
+    }
+
+    bool hasCycle() { return has_cycle; }
+    EdgeList cycle() {
+        std::reverse(cycle_vertices.begin(), cycle_vertices.end());
+        return cycle_vertices;
+    }
+
+    std::string cycleAsString() {
+        auto p = cycle();
+        std::stringstream ss;
+        std::copy(p.begin(), p.end(), std::ostream_iterator<int>(ss, " "));
+        return ss.str();
+    }
+
+protected:
+    void dfs(int source) {
+        struct StackItem {
+            StackItem(int i) : v(i) {}
+            StackItem(int i, Digraph::Range r) : v(i), range(r) {}
+            VertexID v;
+            Digraph::Range range;
+        };
+
+        std::stack<StackItem> frontier;
+        StackItem current_item(source, g.adjacent(source));
+        frontier.push(current_item);
+
+        while (!frontier.empty() && !hasCycle()) {
+            bool all_children_processed = true;
+            current_item = frontier.top();
+            frontier.pop();
+
+            auto v = current_item.v;
+            auto range = current_item.range;
+            marked[v] = true;
+            on_current_path[v] = true;
+
+            for (; range.first != range.second; ++range.first) {
+                auto adjacent_vertex = *(range.first);
+                if (!marked[adjacent_vertex]) {
+                    current_item.range.first = range.first;
+                    current_item.range.second = range.second;
+                    frontier.push(current_item);
+
+                    edge_to[adjacent_vertex] = v;
+                    StackItem new_item(adjacent_vertex, g.adjacent(adjacent_vertex));
+                    frontier.push(new_item);
+                    all_children_processed = false;
+                    break;
+                }
+                else if (on_current_path[adjacent_vertex]) {
+                    for (auto i = v; i != adjacent_vertex; i = edge_to[i]) {
+                        cycle_vertices.push_back(i);
+                    }
+                    cycle_vertices.push_back(adjacent_vertex);
+                    cycle_vertices.push_back(v);
+                    has_cycle = true;
+                    break;
+                }
+            }
+
+            if (all_children_processed) {
+                on_current_path[v] = false;
+            }
+        }
+    }
+private:
+    Digraph g;
+    BoolVector marked;
+    BoolVector on_current_path;
+    EdgeList cycle_vertices;
+    EdgeList edge_to;
+    bool has_cycle = false;
+};
+
+/**
+ * Returns the topological order of a Directed Acyclic Graph.
+ */
+class DigraphTopologicalOrder {
+    using BoolVector = std::deque<bool>;
+    using VertexID = int;
+    using EdgeList = std::vector<VertexID>;
+public:
+    DigraphTopologicalOrder(Digraph& _g) : g(_g), marked((u_long) g.vertexCount(), false) {
+        DigraphCycle cycle_detector(g);
+        if (!cycle_detector.hasCycle()) {
+            computeDAGorder();
+            has_order = true;
+        }
+        else {
+            cycle = cycle_detector.cycleAsString();
+        }
+    }
+
+protected:
+    void computeDAGorder() {
+        struct StackItem {
+            StackItem(int i) : v(i) {}
+            StackItem(int i, Digraph::Range r) : v(i), range(r) {}
+            VertexID v;
+            Digraph::Range range;
+        };
+
+        std::stack<StackItem> frontier;
+        for (int i = 0; i < g.vertexCount(); ++i) {
+            if (!marked[i]) {
+                StackItem current_item(i, g.adjacent(i));
+                frontier.push(current_item);
+
+                // Explicit recursion stack.
+                while (!frontier.empty()) {
+                    bool all_children_processed = true;
+                    current_item = frontier.top();
+                    frontier.pop();
+
+                    auto v = current_item.v;
+                    auto range = current_item.range;
+                    marked[v] = true;
+                    for (; range.first != range.second; ++range.first) {
+                        auto neighbor_vertex = *(range.first);
+                        if (!marked[neighbor_vertex]) {
+                            current_item.range.first = range.first;
+                            current_item.range.second = range.second;
+                            frontier.push(current_item);
+
+                            StackItem new_item(neighbor_vertex, g.adjacent(neighbor_vertex));
+                            frontier.push(new_item);
+                            all_children_processed = false;
+                            break;
+                        }
+                    }
+
+                    if (all_children_processed) {
+                        reverse_post_order.push(v);
+                    }
+                }
+            }
+        }
+    }
+
+public:
+    EdgeList topologicalOrder() {
+        EdgeList path;
+        if (reverse_post_order.empty()) return path;
+
+        while (!reverse_post_order.empty()) {
+            path.push_back(reverse_post_order.top());
+            reverse_post_order.pop();
+        }
+
+        return path;
+    }
+
+    bool hasOrder() {
+        return has_order;
+    }
+
+    std::string topologicalOrderAsString() {
+        auto path = topologicalOrder();
+        std::stringstream ss;
+        std::copy(path.begin(), path.end(), std::ostream_iterator<int>(ss, " "));
+        return ss.str();
+    }
+
+    std::string cycleAsString() {
+        return cycle;
+    }
+
+private:
+    Digraph g;
+    BoolVector marked;
+    std::stack<VertexID> reverse_post_order;
+    bool has_order = false;
+    std::string cycle;
+};
+
 void testDiGraph() {
     Digraph g("data/tinyGraph.txt");
     std::cout << "Directed graph.\n";
@@ -299,6 +495,14 @@ void testDiGraph() {
         } else {
             std::cout << "No path to vertex " << i << ".\n";
         }
+    }
+
+    std::cout << "Topological order of graph is: ";
+    DigraphTopologicalOrder top(g);
+    if (top.hasOrder()) {
+        std::cout << top.topologicalOrderAsString() << ".\n";
+    } else {
+        std::cout << "There is no topological order, there is a cycle present in the graph: " << top.cycleAsString() << ".\n";
     }
 }
 
