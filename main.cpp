@@ -14,6 +14,7 @@
 #include "random_queue.h"
 #include "graph.h"
 #include "digraph.h"
+#include "maximum_path_sum.h"
 
 int main() {
     testUF();
@@ -33,5 +34,6 @@ int main() {
     testRandomQueue();
     testGraph();
     testDiGraph();
+    testMaximumPathSum();
     return 0;
 }
